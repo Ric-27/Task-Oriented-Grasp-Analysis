@@ -22,7 +22,7 @@ This project needs the following python libraries to work:
 - matplotlib
 - numpy
 - numpy-stl
-- scypi
+- scipy
 
 The other requirements should be already on your system as they normally come with Python.
 

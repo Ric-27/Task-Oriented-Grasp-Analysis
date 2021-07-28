@@ -1,4 +1,5 @@
-import math
+import sys
+import scipy
 from scipy.optimize import linprog
 import numpy as np
 from math_tools import get_rank, gen_F
@@ -147,47 +148,38 @@ def Force_closure(grasp, jacobian):
 
 
 def task_oriented(grasp, dExt, fcmax=2, ng=8, mu=0.3):
-    nc = grasp.C.shape[0]
-    L = 3 * nc
-    G = grasp.get_grasp_matrix_t().transpose()
     if not isinstance(dExt, np.ndarray):
         dExt = np.array(dExt)
+    G = grasp.get_grasp_matrix_t().transpose()
+    nc = grasp.C.shape[0]
     L = np.shape(G)[1]
     F = gen_F(nc, ng, mu)
     lF = np.shape(F)[0]
-    obj = (
-        np.concatenate((-1 * np.ones((1, 1)), np.zeros((1, L))), axis=1)
-        .flatten()
-        .reshape(L + 1, 1)
-    )
-    fcn_helper = np.zeros((L, L))
-    for i in range(L):
-        if i % 3 == 0:
-            fcn_helper[i, i] = -1
 
-    lhs_ineq = np.block(
-        [
-            [np.zeros((lF, 1)), -F],
-            [np.zeros((L, 1)), np.eye(L)],
-            [-1 * np.ones(1), np.zeros((1, L))],
-            [np.zeros((L, 1)), fcn_helper],
-        ]
-    )
+    obj = np.zeros((L + 1, 1))
+    obj[0] = -1
 
-    rhs_ineq = np.concatenate(
-        (
-            np.zeros((1, lF)),
-            fcmax * np.ones((1, L)),
-            np.zeros((1, 1)),
-            np.zeros((1, L)),
-        ),
-        axis=1,
-    ).flatten()
+    lhs_ineq = np.concatenate(
+        (np.zeros((lF, 1)), -F), axis=1
+    )  # 0*alpha - F*fc <= 0 (F*fc > 0)
+    rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
 
-    lhs_eq = np.concatenate((dExt.reshape(6, 1), G), axis=1)
+    lhs_eq = np.concatenate((dExt.reshape(6, 1), G), axis=1)  # dWext*alpha + G*fc = 0
     rhs_eq = np.zeros((6, 1)).flatten()
 
-    bnd = (None, None)
+    bnd_alpha = (0, None)
+    bnd_fcn = (sys.float_info.epsilon, fcmax)
+    bnd_fct = (None, None)
+
+    bnd = []
+    bnd.append(bnd_alpha)
+
+    for i in range(L):
+        if i % 3 == 0:
+            bnd.append(bnd_fcn)
+        else:
+            bnd.append(bnd_fct)
+
     opt = linprog(
         c=obj,
         A_ub=lhs_ineq,
@@ -195,17 +187,11 @@ def task_oriented(grasp, dExt, fcmax=2, ng=8, mu=0.3):
         A_eq=lhs_eq,
         b_eq=rhs_eq,
         bounds=bnd,
+        method="revised simplex",
     )
-
     if opt.success:
         # print("Task Metric Exists with alpha =", abs(opt.fun))
-        fc = np.zeros((L, 1))
-        for i in range(L):
-            if i % 3 == 0:
-                fc[i] = abs(opt.x[i + 1])
-            else:
-                fc[i] = abs(opt.x[i + 1])
-        return abs(opt.fun), fc
+        return opt.x[0], opt.x[1:]
     else:
         # print("Task Metric does not Exist")
         return -1, np.zeros((1, L))

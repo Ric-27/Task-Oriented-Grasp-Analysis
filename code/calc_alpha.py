@@ -6,18 +6,21 @@ from class_grasp import Grasp
 from quality_metrics import task_oriented
 from math_tools import get_rank
 
-np.set_printoptions(suppress=True)
+# np.set_printoptions(suppress=True)
 
-# reading the data from the file
-with open("textfiles/alpha.txt") as f:
-    data_f = f.read()
-data_f = ast.literal_eval(data_f)
+# reading the data from the files
 
-with open("textfiles/grasps.txt") as f:
-    data_g = f.read()
-data_g = ast.literal_eval(data_g)
+with open("./textfiles/alpha.txt") as f:
+    objects = f.read()
+objects = ast.literal_eval(objects)
+
+with open("./textfiles/grasps.txt") as f:
+    objects_grasps_definition = f.read()
+objects_grasps_definition = ast.literal_eval(objects_grasps_definition)
+
 DECIMAL_PLACES = 3
-dExts = np.array(
+
+DIR_W_EXT = np.array(
     (
         [
             [1, 0, 0, 0, 0, 0],
@@ -27,7 +30,13 @@ dExts = np.array(
             [0, 0, 1, 0, 0, 0],
             [0, 0, -1, 0, 0, 0],
             [1, 1, 1, 0, 0, 0],
+            [-1, 1, 1, 0, 0, 0],
+            [-1, -1, 1, 0, 0, 0],
+            [1, -1, 1, 0, 0, 0],
+            [1, 1, -1, 0, 0, 0],
+            [-1, 1, -1, 0, 0, 0],
             [-1, -1, -1, 0, 0, 0],
+            [1, -1, -1, 0, 0, 0],
             [0, 0, 0, 1, 0, 0],
             [0, 0, 0, -1, 0, 0],
             [0, 0, 0, 0, 1, 0],
@@ -35,23 +44,74 @@ dExts = np.array(
             [0, 0, 0, 0, 0, 1],
             [0, 0, 0, 0, 0, -1],
             [0, 0, 0, 1, 1, 1],
+            [0, 0, 0, -1, 1, 1],
+            [0, 0, 0, -1, -1, 1],
+            [0, 0, 0, 1, -1, 1],
+            [0, 0, 0, 1, 1, -1],
+            [0, 0, 0, -1, 1, -1],
             [0, 0, 0, -1, -1, -1],
+            [0, 0, 0, 1, -1, -1],
             [1, 1, 1, 1, 1, 1],
-            [-1, -1, -1, -1, -1, -1],
         ]
     )
 )
-fmaxs = np.array([0.5, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-for fmax in fmaxs:
+
+F_MAXS = np.array(
+    [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5,
+        0.6,
+        0.7,
+        0.8,
+        0.9,
+        1,
+        1.1,
+        1.2,
+        1.3,
+        1.4,
+        1.5,
+        1.6,
+        1.7,
+        1.8,
+        1.9,
+        2,
+        2.2,
+        2.4,
+        2.6,
+        2.8,
+        3,
+        3.2,
+        3.4,
+        3.6,
+        3.8,
+        4,
+        4.2,
+        4.4,
+        4.6,
+        4.8,
+        5,
+        5.5,
+        6,
+        6.5,
+        7,
+        7.5,
+        8,
+    ]
+)
+
+for fmax in F_MAXS:
     print(fmax)
     print(50 * "+")
-    for key, value in data_f.items():
+    for key, value in objects.items():
         info = value.copy()
         obj = info[0]
         grasps = info[1]
         for g in grasps:
             key_g = obj + "_" + g
-            coord = data_g[key_g].copy()
+            coord = objects_grasps_definition[key_g].copy()
             path = "../stl/" + coord.pop(0) + ".stl"
             var = np.array(coord)  # .reshape((int(len(coord) / 4), 4))
             mesh = STL(path)
@@ -72,6 +132,21 @@ for fmax in fmaxs:
             rr = np.array(rr)
 
             grasp = Grasp(mesh.cog, cc, rr)
+
+            alphas = []
+            all_forces = []
+
+            for dExt in DIR_W_EXT:
+                al, forces = task_oriented(grasp, dExt, fmax, 8, 0.3)
+                alphas.append(round(al, DECIMAL_PLACES))
+                all_forces.append(forces.round(DECIMAL_PLACES))
+
+            for alpha in alphas:
+                if alpha >= 0:
+                    print(alpha, end=",")
+                else:
+                    print("-", end=",")
+            print("")
             """
             G = grasp.get_grasp_matrix_t().transpose()
             rank = getRank(G)
@@ -83,36 +158,6 @@ for fmax in fmaxs:
                     "TRUE" if gra == 1 else "FALSE",
                 )
             )
-            """
-            alphas = []
-            for dExt in dExts:
-
-                al, forces = task_oriented(grasp, dExt, fmax, 8, 0.3)
-                alphas.append(al)
-
-            print(
-                "{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
-                    round(alphas[0], DECIMAL_PLACES) if alphas[0] >= 0 else "-",
-                    round(alphas[1], DECIMAL_PLACES) if alphas[1] >= 0 else "-",
-                    round(alphas[2], DECIMAL_PLACES) if alphas[2] >= 0 else "-",
-                    round(alphas[3], DECIMAL_PLACES) if alphas[3] >= 0 else "-",
-                    round(alphas[4], DECIMAL_PLACES) if alphas[4] >= 0 else "-",
-                    round(alphas[5], DECIMAL_PLACES) if alphas[5] >= 0 else "-",
-                    round(alphas[6], DECIMAL_PLACES) if alphas[6] >= 0 else "-",
-                    round(alphas[7], DECIMAL_PLACES) if alphas[7] >= 0 else "-",
-                    round(alphas[8], DECIMAL_PLACES) if alphas[8] >= 0 else "-",
-                    round(alphas[9], DECIMAL_PLACES) if alphas[9] >= 0 else "-",
-                    round(alphas[10], DECIMAL_PLACES) if alphas[10] >= 0 else "-",
-                    round(alphas[11], DECIMAL_PLACES) if alphas[11] >= 0 else "-",
-                    round(alphas[12], DECIMAL_PLACES) if alphas[12] >= 0 else "-",
-                    round(alphas[13], DECIMAL_PLACES) if alphas[13] >= 0 else "-",
-                    round(alphas[14], DECIMAL_PLACES) if alphas[14] >= 0 else "-",
-                    round(alphas[15], DECIMAL_PLACES) if alphas[15] >= 0 else "-",
-                    round(alphas[16], DECIMAL_PLACES) if alphas[16] >= 0 else "-",
-                    round(alphas[17], DECIMAL_PLACES) if alphas[17] >= 0 else "-",
-                )
-            )
-            """
             nc = var.shape[0]
             fcn = []
             for i, force in enumerate(forces, 0):
@@ -126,7 +171,6 @@ for fmax in fmaxs:
             )
             break
             mesh.viewCR(cc, rr)
-    print(30 * "-")
-    """
-    print(50 * "+")
+            """
+    print("")
 print("DONE!!!")
