@@ -1,57 +1,75 @@
+from re import I
 import sys
 import numpy as np
-from scipy.linalg import block_diag, null_space
-from data_types import Finger
-from math_tools import gen_H, get_S
+from scipy.linalg import null_space
+from data_types import Finger, Contact
+from math_tools import block_diag, get_S, check_equal_vectors, list_to_vertical_matrix
 
 np.set_printoptions(suppress=True)
 
 
 class Jacobian:
-    def __init__(self, fingers, C, R, h=None):
-        assert C.shape[0] == R.shape[0], "C and R must have the number of elements"
-        assert (
-            R.shape[1] == 3 and R.shape[2] == 3
-        ), "Contact Rotation Elements must be 3x3"
-        assert C.shape[1] == 3, "Contact Location Elements must be in 3d"
+    def __init__(self, fingers, contact_points):
+        assert isinstance(
+            contact_points.all(), Contact
+        ), "Contact elements must be of type Contact"
         assert isinstance(
             fingers.all(), Finger
         ), "finger elements must be of type Finger"
         self.fingers = fingers
-        self.C = C
-        self.R = R
-
-        if not isinstance(h, np.ndarray):
-            h = np.array(["H" for _ in range(C.shape[0])])
-        else:
-            assert (
-                h.size == C.shape[0]
-            ), "The amount of Contact Model Elements must be the same as Contact Points"
-            for hi in h:
-                if hi != "S" and hi != "H" and hi != "P":
-                    sys.exit(
-                        "ERROR: Values inside h must be H for hardfinger, S for softfinger or P for point contact. NOT: {}".format(
-                            hi
-                        )
-                    )
-        self.h = h
+        self.contact_points = contact_points
         nq = 0
         for finger in self.fingers:
             for _ in finger.finger_joints:
                 nq += 1
         self.nq = nq
+        self.nc = contact_points.shape[0]
+        self.H = np.zeros(1)
+        self.J = np.zeros(1)
+        self.L = 0
+        self.defective = -1
+        self.redundant = -1
+        self.updt_H()
+        self.updt_classification()
 
-    def __zi(self, Ci, Cid):
+    def updt_H(self):
+        hi = []
+        for contact in self.contact_points:
+            hi.append(contact.h)
+            self.L += contact.l
+        self.H = block_diag(hi)
+
+    def get_J(self):
+        self.upt_J()
+        return self.J
+
+    def get_classification(self, print_bool=False):
+        self.updt_classification()
+        if print_bool:
+            print("-" * 25)
+            print("JACOBIAN CLASSIFICATION: ")
+            if not self.defective:
+                print("Nullspace(Jt): trivial --> Not Defective")
+            else:
+                print("Nullspace(Jt): not trivial --> Defective")
+            if not self.redundant:
+                print("Nullspace(J): trivial --> Not Redundant")
+            else:
+                print("Nullspace(Jt): not trivial --> Redundant")
+        return self.defective, self.redundant
+
+    def __zi(self, Ci):
         exit_loop = False
         finger_id = -1
         joint_id = -1
         for finger in self.fingers:
             for joint in finger.finger_joints:
-                if joint.joint_contact_id == Cid:
-                    finger_id = finger.finger_id
-                    joint_id = joint.joint_id
-                    exit_loop = True
-                    break
+                if joint.joint_contact_location is not None:
+                    if check_equal_vectors(joint.joint_contact_location, Ci):
+                        finger_id = finger.finger_id
+                        joint_id = joint.joint_id
+                        exit_loop = True
+                        break
             if exit_loop:
                 break
 
@@ -84,23 +102,21 @@ class Jacobian:
         return Zi
 
     def __p_ji(self, Ri, Zi):
-        R = block_diag(*([Ri] * 2))
+        R = block_diag([Ri, Ri])
         result = np.dot(R.transpose(), Zi)
         return result
 
-    def get_jacobian_matrix(self):
-        pJ = self.__p_ji(self.R[0], self.__zi(self.C[0], 0))
-        for i in range(1, self.C.shape[0]):
-            pJ = np.concatenate(
-                (pJ, self.__p_ji(self.R[i], self.__zi(self.C[i], i))), axis=0
-            )
-        J = np.dot(gen_H(self.h), pJ)
-        return J
+    def upt_J(self):
+        pJ = []
+        for contact in self.contact_points:
+            pJ.append(self.__p_ji(contact.r, self.__zi(contact.c)))
+        pJ = list_to_vertical_matrix(pJ)
+        self.J = np.dot(self.H, pJ)
 
-    def get_jacobian_classification(self, print_bool=False):
+    def updt_classification(self):
         defective = True
         redundant = True
-        J = self.get_jacobian_matrix()
+        J = self.get_J()
         Jt = J.transpose()
         ns_Jt = null_space(Jt).round(2)
         if ns_Jt.size > 0 and ns_Jt.any() != 0:
@@ -134,21 +150,8 @@ class Jacobian:
                 redundant = True
         else:
             redundant = False
-
-        if print_bool:
-            print("-" * 25)
-            print("JACOBIAN CLASSIFICATION: ")
-            if not defective:
-                print("Nullspace(Jt): trivial --> Not Defective")
-            else:
-                print("Nullspace(Jt): not trivial --> Defective")  # \nN(Jt):\n,ns_Jt)
-            if not redundant:
-                print("Nullspace(J): trivial --> Not Redundant")
-            else:
-                print(
-                    "Nullspace(Jt): not trivial --> Redundant"
-                )  # \nN(J):\n")  # ,ns_J)
-        return defective, redundant
+        self.defective = defective
+        self.redundant = redundant
 
     def get_hand_architecture(self):
         print("-" * 25)
@@ -161,18 +164,18 @@ class Jacobian:
         for finger in self.fingers:
             print("Finger{}: HAND ".format(finger.finger_id), end="")
             for joint in finger.finger_joints:
-                if joint.joint_contact_id < 0:
+                if joint.joint_contact_location is None:
                     print("- q{} ".format(joint.joint_id), end="")
                 else:
+                    for i, contact in enumerate(self.contact_points, 0):
+                        if check_equal_vectors(joint.joint_contact_location, contact.c):
+                            contact_id = i
+                            break
                     print(
                         "- q{}[C{}({})] ".format(
                             joint.joint_id,
-                            joint.joint_contact_id + 1,
-                            "HF"
-                            if self.h[joint.joint_contact_id] == "H"
-                            else "SF"
-                            if self.h[joint.joint_contact_id] == "S"
-                            else "PwoF",
+                            contact_id,
+                            self.contact_points[contact_id].type,
                         ),
                         end="",
                     )
@@ -185,7 +188,7 @@ class Jacobian:
                     or j == finger.finger_joints.shape[0] - 1
                 ):
                     lenght = np.linalg.norm(
-                        joint.joint_origin - self.C[joint.joint_contact_id]
+                        joint.joint_origin - joint.joint_contact_location
                     )
                 else:
                     lenght = np.linalg.norm(

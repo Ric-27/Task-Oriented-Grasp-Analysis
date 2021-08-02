@@ -4,6 +4,7 @@ from mpl_toolkits import mplot3d
 from matplotlib import pyplot as plt
 import numpy as np
 import random
+from data_types import Contact
 
 
 class STL:
@@ -36,8 +37,11 @@ class STL:
         self.edges = np.array(edges_temp)
         self.vertices = self.triangles.flatten().reshape(self.triangles.shape[0] * 3, 3)
 
-    def view_mesh(self):
+    def view(self, contacts=None):
         """Shows the mesh as a surface in a matplot plot"""
+        xj = np.array([1, 0, 0])
+        yj = np.array([0, 1, 0])
+        zj = np.array([0, 0, 1])
         figure = plt.figure()
         if sys.version_info >= (3, 7):
             ax = mplot3d.Axes3D(figure, auto_add_to_figure=False)  # Python 3.8
@@ -77,9 +81,40 @@ class STL:
             (self.cog[2], self.cog[2] + biggest * 0.1),
             color="blue",
         )
+        if contacts is not None:
+            for contact in contacts:
+                n = np.dot(contact.r, xj)
+                t = np.dot(contact.r, yj)
+                o = np.dot(contact.r, zj)
+
+                cx = contact.c[0]
+                cy = contact.c[1]
+                cz = contact.c[2]
+
+                ax.scatter(cx, cy, cz, color="red")
+                ax.plot(
+                    (cx, (cx + n[0] * biggest * 0.1)),
+                    (cy, (cy + n[1] * biggest * 0.1)),
+                    (cz, (cz + n[2] * biggest * 0.1)),
+                    color="red",
+                )
+
+                ax.plot(
+                    (cx, (cx + t[0] * biggest * 0.1)),
+                    (cy, (cy + t[1] * biggest * 0.1)),
+                    (cz, (cz + t[2] * biggest * 0.1)),
+                    color="green",
+                )
+                ax.plot(
+                    (cx, (cx + o[0] * biggest * 0.1)),
+                    (cy, (cy + o[1] * biggest * 0.1)),
+                    (cz, (cz + o[2] * biggest * 0.1)),
+                    color="blue",
+                )
+
         plt.show()
 
-    def gen_C_randomly(self, nc):
+    def gen_C_randomly(self, nc, mu=0.3, iota=0, ng=8):
         """Generates a random (nc) number of contact points and their respective
         rotational frame, the result of the method are three pairs of contact points and rotation frames, the first pair are contact points generated at the barycenter of the triangles, the secong at the middle of the edges and the third are located at the vertices.
         The sum of the pairs of contact points are 3*nc, if gen is false the contact and rotation pairs for edges and vertices are a copy of the triangles ones.
@@ -87,9 +122,10 @@ class STL:
         xj = np.array([1, 0, 0])
         yj = np.array([0, 1, 0])
         zj = np.array([0, 0, 1])
+
         # Triangles
+
         Ct = []
-        Rt = []
         triangles = self.triangles[random.sample(range(self.triangles.shape[0]), k=nc)]
         for triangle in triangles:
             cX = (sum(triangle[:, 0])) / 3
@@ -116,16 +152,34 @@ class STL:
                     [np.dot(ni, zj), np.dot(ti, zj), np.dot(oi, zj)],
                 ]
             )
-
-            Rt.append(ri)
-            Ct.append(ci)
-
+            Ct.append(Contact(ci, ri, mu, iota, ng))
         Ct = np.array(Ct)
-        Rt = np.array(Rt)
+
         # Edges
+
         Ce = []
-        Re = []
-        edges = self.edges[random.sample(range(self.edges.shape[0]), k=nc)]
+        same = True
+        while same:
+            same = False
+            edges = self.edges[random.sample(range(self.edges.shape[0]), k=nc)]
+            centers = []
+            for edge in edges:
+                centers.append(
+                    [
+                        edge[0][0] - edge[1][0],
+                        edge[0][1] - edge[1][1],
+                        edge[0][2] - edge[1][2],
+                    ]
+                )
+            for i, point_i in enumerate(centers, 0):
+                if same == True:
+                    break
+                for j, point_j in enumerate(centers, 0):
+                    if i != j:
+                        if point_i == point_j:
+                            same = True
+                            break
+
         for edge in edges:
             trianglesOfEdge = []
             for triangle in self.triangles:
@@ -162,15 +216,15 @@ class STL:
             cX = (sum(edge[:, 0])) / 2
             cY = (sum(edge[:, 1])) / 2
             cZ = (sum(edge[:, 2])) / 2
-            cOfE = np.array([cX, cY, cZ])
+            ci = np.array([cX, cY, cZ])
 
-            tE = edge[0] - cOfE
+            tE = edge[0] - ci
             tE = tE / np.linalg.norm(tE)
 
             oE = np.cross(nE, tE)
             oE = oE / np.linalg.norm(oE)
 
-            rOfE = np.array(
+            ri = np.array(
                 [
                     [np.dot(nE, xj), np.dot(tE, xj), np.dot(oE, xj)],
                     [np.dot(nE, yj), np.dot(tE, yj), np.dot(oE, yj)],
@@ -178,22 +232,24 @@ class STL:
                 ]
             )
 
-            Ce.append(cOfE)
-            Re.append(rOfE)
-
+            Ce.append(Contact(ci, ri, mu, iota, ng))
         Ce = np.array(Ce)
-        Re = np.array(Re)
+
         # Points
+
         Cv = []
-        Rv = []
         same = True
         while same:
             same = False
             vertices = self.vertices[random.sample(range(self.vertices.shape[0]), k=nc)]
             for i, point_i in enumerate(vertices, 0):
+                if same == True:
+                    break
                 for j, point_j in enumerate(vertices, 0):
-                    if (point_i == point_j).all() and i != j:
-                        same = True
+                    if i != j:
+                        if (point_i == point_j).all():
+                            same = True
+                            break
 
         for vertex in vertices:
             trianglesOfVertex = []
@@ -241,7 +297,7 @@ class STL:
             oV = np.cross(nV, tV)
             oV = oV / np.linalg.norm(oV)
 
-            rOfV = np.array(
+            ri = np.array(
                 [
                     [np.dot(nV, xj), np.dot(tV, xj), np.dot(oV, xj)],
                     [np.dot(nV, yj), np.dot(tV, yj), np.dot(oV, yj)],
@@ -249,34 +305,18 @@ class STL:
                 ]
             )
 
-            Cv.append(vertex)
-            Rv.append(rOfV)
+            Cv.append(Contact(vertex, ri, mu, iota, ng))
 
         Cv = np.array(Cv)
-        Rv = np.array(Rv)
 
-        in_array = False
-        for i, point_i in enumerate(Ce, 0):
-            for j, point_j in enumerate(Ce, 0):
-                if (point_i == point_j).all() and i != j:
-                    in_array = True
-                    break
-            if in_array:
-                break
-        if in_array:
-            Ct, Rt, Ce, Re, Cv, Rv = self.gen_C_randomly(nc)
+        return Ct, Ce, Cv
 
-        return Ct, Rt, Ce, Re, Cv, Rv
-
-    def gen_C_from_coordinates(self, coord, location="T"):
+    def gen_C_from_coordinates(self, coord, location="T", mu=0.3, iota=0, ng=8):
         """Returns the contact coordinates and respective rotation frame of the
         nearest point of the passed coordinates, can specify the desired location of the generated point, if the center of a triangle, an edge or a vertex, for the last two it is necessary that the gen parameters was true on the constructor"""
         xj = np.array([1, 0, 0])
         yj = np.array([0, 1, 0])
         zj = np.array([0, 0, 1])
-
-        Cc = []
-        Rc = []
 
         assert (
             location == "T" or location == "E" or location == "V"
@@ -353,8 +393,7 @@ class STL:
                 ]
             )
 
-            Cc = cOfE
-            Rc = rOfE
+            Cc = Contact(cOfE, rOfE, mu, iota, ng)
         elif location == "V":
             coordVertex = self.vertices[0]
             for vertex in self.vertices:
@@ -415,8 +454,7 @@ class STL:
                     [np.dot(nV, zj), np.dot(tV, zj), np.dot(oV, zj)],
                 ]
             )
-            Cc = coordVertex
-            Rc = rOfV
+            Cc = Contact(coordVertex, rOfV, mu, iota, ng)
         else:
             coordTriangle = self.triangles[0]
             for triangle in self.triangles:
@@ -450,9 +488,7 @@ class STL:
                     [np.dot(ni, zj), np.dot(ti, zj), np.dot(oi, zj)],
                 ]
             )
-
-            Cc = ci
-            Rc = ri
+            Cc = Contact(ci, ri, mu, iota, ng)
         """
         print(
             "point {} was assigned {} in the {} of a triangle of the object mesh".format(
@@ -466,86 +502,5 @@ class STL:
             )
         )
         """
-        return Cc.reshape(1, 3), np.array([Rc])
-
-    def view_with_C(self, C, R):
-        """Shows a wire frame view of the object with passed contact points and their rotation"""
-        xj = np.array([1, 0, 0])
-        yj = np.array([0, 1, 0])
-        zj = np.array([0, 0, 1])
-
-        figure = plt.figure()
-        if sys.version_info >= (3, 7):
-            ax = mplot3d.Axes3D(figure, auto_add_to_figure=False)
-            figure.add_axes(ax)
-        else:
-            ax = mplot3d.Axes3D(figure)
-
-        collection = mplot3d.art3d.Poly3DCollection(
-            self.triangles, linewidths=0.5, alpha=0.2
-        )
-        collection.set_facecolor([0.3, 0.3, 0.3])
-        collection.set_edgecolor([0, 0, 0])
-        ax.add_collection3d(collection)
-
-        scale = self.triangles.flatten()
-        ax.auto_scale_xyz(scale, scale, scale)
-
-        biggest = max(scale) if max(scale) > abs(min(scale)) else abs(min(scale))
-
-        ax.scatter(0, 0, 0, color="magenta")
-        ax.plot((0, biggest * 0.1), (0, 0), (0, 0), color="red")
-        ax.plot((0, 0), (0, biggest * 0.1), (0, 0), color="green")
-        ax.plot((0, 0), (0, 0), (0, biggest * 0.1), color="blue")
-
-        ax.scatter(self.cog[0], self.cog[1], self.cog[2], color="darkorange")
-        """
-        ax.plot(
-            (self.cog[0], self.cog[0] + biggest * 0.1),
-            (self.cog[1], self.cog[1]),
-            (self.cog[2], self.cog[2]),
-            color="red",
-        )
-        ax.plot(
-            (self.cog[0], self.cog[0]),
-            (self.cog[1], self.cog[1] + biggest * 0.1),
-            (self.cog[2], self.cog[2]),
-            color="green",
-        )
-        ax.plot(
-            (self.cog[0], self.cog[0]),
-            (self.cog[1], self.cog[1]),
-            (self.cog[2], self.cog[2] + biggest * 0.1),
-            color="blue",
-        )
-        """
-        for i, rotation in enumerate(R, 0):
-            n = np.dot(rotation, xj)
-            t = np.dot(rotation, yj)
-            o = np.dot(rotation, zj)
-
-            cx = C[i, 0]
-            cy = C[i, 1]
-            cz = C[i, 2]
-
-            ax.scatter(cx, cy, cz, color="red")
-            ax.plot(
-                (cx, (cx + n[0] * biggest * 0.1)),
-                (cy, (cy + n[1] * biggest * 0.1)),
-                (cz, (cz + n[2] * biggest * 0.1)),
-                color="red",
-            )
-
-            ax.plot(
-                (cx, (cx + t[0] * biggest * 0.1)),
-                (cy, (cy + t[1] * biggest * 0.1)),
-                (cz, (cz + t[2] * biggest * 0.1)),
-                color="green",
-            )
-            ax.plot(
-                (cx, (cx + o[0] * biggest * 0.1)),
-                (cy, (cy + o[1] * biggest * 0.1)),
-                (cz, (cz + o[2] * biggest * 0.1)),
-                color="blue",
-            )
-        plt.show()
+        Cc = np.array([Cc])
+        return Cc

@@ -28,7 +28,7 @@ objects = [
 
 for object in objects:
     print(object)
-    path = "../stl/new/" + object + ".stl"
+    path = "./stl/" + object + ".stl"
 
     meshi = mesh.Mesh.from_file(path)
     triangles = meshi.vectors

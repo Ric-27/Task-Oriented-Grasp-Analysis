@@ -1,5 +1,6 @@
 # importing the module
 import ast
+from math_tools import list_to_vertical_matrix
 from quality_metrics import alpha_from_direction
 import numpy as np
 from class_stl import STL
@@ -10,11 +11,11 @@ from math_tools import get_rank
 
 # reading the data from the files
 
-with open("./textfiles/alpha.txt") as f:
+with open("./code/textfiles/alpha.txt") as f:
     objects = f.read()
 objects = ast.literal_eval(objects)
 
-with open("./textfiles/grasps.txt") as f:
+with open("./code/textfiles/grasps.txt") as f:
     objects_grasps_definition = f.read()
 objects_grasps_definition = ast.literal_eval(objects_grasps_definition)
 
@@ -112,32 +113,26 @@ for fmax in F_MAXS:
         for g in grasps:
             key_g = obj + "_" + g
             coord = objects_grasps_definition[key_g].copy()
-            path = "../stl/" + coord.pop(0) + ".stl"
+            path = "./stl/" + coord.pop(0) + ".stl"
             var = np.array(coord)  # .reshape((int(len(coord) / 4), 4))
             mesh = STL(path)
-            cc = []
-            rr = []
-            for point in var:
-                c, r = mesh.gen_C_from_coordinates(
-                    np.array([point[0], point[1], point[2]], dtype=np.float64),
-                    point[3].upper(),
-                )
-                cc.append(
-                    c.reshape(
-                        3,
+            contact_points = []
+            for pt in var:
+                contact_points.append(
+                    mesh.gen_C_from_coordinates(
+                        np.array([pt[0], pt[1], pt[2]], dtype=np.float64),
+                        pt[3].upper(),
                     )
                 )
-                rr.append(r.reshape(3, 3))
-            cc = np.array(cc)
-            rr = np.array(rr)
+            contact_points = list_to_vertical_matrix(contact_points)
 
-            grasp = Grasp(mesh.cog, cc, rr)
+            grasp = Grasp(mesh.cog, contact_points)
 
             alphas = []
             all_forces = []
 
             for dExt in DIR_W_EXT:
-                al, forces = alpha_from_direction(grasp, dExt, fmax, 8, 0.3)
+                al, forces = alpha_from_direction(grasp, dExt, fmax)
                 alphas.append(round(al, DECIMAL_PLACES))
                 all_forces.append(forces.round(DECIMAL_PLACES))
 
@@ -170,7 +165,7 @@ for fmax in F_MAXS:
                 )
             )
             break
-            mesh.viewCR(cc, rr)
+            mesh.viewCR(contact_points, rr)
             """
     print("")
 print("DONE!!!")

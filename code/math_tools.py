@@ -1,7 +1,5 @@
 import numpy as np
 from numpy.linalg import matrix_rank
-import math
-from scipy.linalg import block_diag
 
 
 def get_S(r):
@@ -11,49 +9,49 @@ def get_S(r):
     return np.array([[0, -rz, ry], [rz, 0, -rx], [-ry, rx, 0]])
 
 
-def get_Hi(hi):
-    if hi == "P":
-        return np.array([[1, 0, 0, 0, 0, 0]])
-    elif hi == "S":
-        return np.concatenate((np.identity(4), np.zeros((4, 2))), axis=1)
-    else:
-        return np.concatenate((np.identity(3), np.zeros((3, 3))), axis=1)
-
-
-def gen_H(h):
-    H_result = get_Hi(h[0])
-    for hi in h[1:]:
-        Hi_temp = get_Hi(hi)
-        Hi_temp = np.concatenate(
-            (np.zeros((Hi_temp.shape[0], H_result.shape[1])), Hi_temp), axis=1
-        )
-        H_result = np.concatenate((H_result, np.zeros((H_result.shape[0], 6))), axis=1)
-        H_result = np.concatenate((H_result, Hi_temp), axis=0)
-    return H_result
-
-
 def get_rank(m):
     return matrix_rank(m)
 
 
-def gen_F(nc, ng=8, mu=0.3):
-    S = []
-    for k in range(ng):
-        sk = np.array(
-            [
-                1,
-                mu * math.cos(2 * k * math.pi / ng),
-                mu * math.sin(2 * k * math.pi / ng),
-            ]
-        )
-        S.append(sk)
-    S = np.array(S).transpose()
+def block_diag(values):
+    result = values[0]
+    for value in values[1:]:
+        existing_rows_zeros = np.zeros((result.shape[0], value.shape[1]))
+        new_row_zeros = np.zeros((value.shape[0], result.shape[1]))
+        new_row = np.concatenate((new_row_zeros, value), axis=1)
+        result = np.concatenate((result, existing_rows_zeros), axis=1)
+        result = np.concatenate((result, new_row), axis=0)
+    return result
 
-    F = []
-    for k in range(ng):
-        kk = k + 1 if k != ng - 1 else 0
-        Fk = np.cross(S[:, k], S[:, kk])
-        F.append(Fk)
-    F = np.array(F)
-    F = block_diag(*([F] * nc))
-    return F
+
+def check_equal_matrices(a, b):
+    if a.shape[0] != b.shape[0] and a.shape[1] != b.shape[1]:
+        return False
+    for i in range(a.shape[0]):
+        for j in range(a.shape[1]):
+            if a[i, j] != b[i, j]:
+                return False
+    return True
+
+
+def check_equal_vectors(a, b):
+    # print("{} == {}".format(a, b))
+    if a.shape[0] != b.shape[0]:
+        return False
+    for i in range(a.shape[0]):
+        if a[i] != b[i]:
+            return False
+    return True
+
+
+def list_to_vertical_matrix(list_):
+    """
+    for i in range(len(list_)):
+        if i == 0:
+            base = list_[0].shape[1]
+        assert base == list_[i].shape[1], "dim 1 must be the same for all elements"
+    """
+    result = np.array(list_[0])
+    for value in list_[1:]:
+        result = np.concatenate((result, value), axis=0)
+    return result

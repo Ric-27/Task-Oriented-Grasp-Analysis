@@ -1,51 +1,45 @@
 # importing the module
 import ast
-from re import T
+from math_tools import list_to_vertical_matrix
 import numpy as np
 from class_stl import STL
 from class_grasp import Grasp
 
 np.set_printoptions(suppress=True)
 
-key_view = ""
+obj = "petri"
+grsp = "c6"
 
 # reading the data from the file
-with open("textfiles/grasps.txt") as f:
-    data = f.read()
-data = ast.literal_eval(data)
+with open("./code/textfiles/grasps.txt") as f:
+    data_grasps = f.read()
+data_grasps = ast.literal_eval(data_grasps)
 
-for key, value in reversed(data.items()):
-    if key_view != "":
-        key = key_view
-        value = data[key]
-    coord = value.copy()
-    path = "../stl/new/" + coord.pop(0) + ".stl"
+for key, value in data_grasps.items():
+    if obj != "" and grsp != "":
+        key = obj + "_" + grsp
+    coord = data_grasps[key].copy()
+    path = "./stl/" + coord.pop(0) + ".stl"
     var = np.array(coord)  # .reshape((int(len(coord) / 4), 4))
     print(key)
     print("nc:", var.shape[0])
     mesh = STL(path)
-    cc = []
-    rr = []
+    contact_points = []
     for point in var:
-        c, r = mesh.gen_C_from_coordinates(
-            np.array([point[0], point[1], point[2]], dtype=np.float64), point[3].upper()
-        )
-        cc.append(
-            c.reshape(
-                3,
+        contact_points.append(
+            mesh.gen_C_from_coordinates(
+                np.array([point[0], point[1], point[2]], dtype=np.float64),
+                point[3].upper(),
             )
         )
 
-        # print(point, "\t\t", c)
-        rr.append(r.reshape(3, 3))
-    cc = np.array(cc)
-    rr = np.array(rr)
-    """
-    grasp = Grasp(mesh.cog, cc, rr)
-    print("Gt \n", grasp.getGt())
-    grasp.GraspClassification(True)
-    """
-    mesh.view_with_C(cc, rr)
+    contact_points = list_to_vertical_matrix(contact_points)
 
-    # if key == list(data)[-1] or key == key_view:
-    #    break
+    grasp = Grasp(mesh.cog, contact_points)
+    print("Gt \n", grasp.Gt)
+    grasp.get_classification(True)
+
+    mesh.view(contact_points)
+
+    if obj != "" and grsp != "":
+        break

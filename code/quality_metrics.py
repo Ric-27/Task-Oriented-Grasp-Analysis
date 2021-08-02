@@ -1,35 +1,35 @@
 import sys
 from scipy.optimize import linprog
 import numpy as np
-from math_tools import get_rank, gen_F
+from math_tools import get_rank
 from class_grasp import Grasp
 
 
 def friction_form_closure(grasp, ng=8, mu=0.3):
-    G = grasp.getGt().transpose()
+    G = grasp.Gt.transpose()
     if get_rank(G) != 6:
         print("ERROR: rank of G is not equal to 6")
         print("Friction Form Closure does not Exist")
         return -1, -1
-    graspable = grasp.GraspClassification(False)[1]
+    graspable = grasp.get_grasp_classification(False)[1]
     if not graspable:
         print("ERROR: G is not Graspable")
         print("Friction Form Closure does not Exist")
         return -1, -1
-    notH = False
-    for hi in grasp.h:
-        if hi != "H":
-            notH = True
+    not_hf = False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            not_hf = True
             break
-    if notH:
+    if not_hf:
         print(
             "ERROR: Original definition of contact models is not Hard Finger for all contacts"
         )
         return -1, -1
-    nc = grasp.C.shape[0]
+    nc = grasp.nc
 
-    L = 3 * nc
-    F = gen_F(nc, ng, mu)
+    L = grasp.l
+    F = grasp.F
     e = []
     for i in range(nc):
         e.append([1, 0, 0])
@@ -79,10 +79,10 @@ def friction_form_closure(grasp, ng=8, mu=0.3):
         return -1, np.zeros((1, L))
 
 
-def Force_closure(grasp, jacobian):
+def force_closure(grasp, jacobian):
     assert isinstance(grasp, Grasp), "grasp must be an object of type Grasp"
-    nc = grasp.C.shape[0]
-    L = 3 * nc
+    nc = grasp.nc
+    L = grasp.l
 
     d, l = friction_form_closure(grasp)
     if d <= 0:
@@ -91,8 +91,8 @@ def Force_closure(grasp, jacobian):
         )
         return np.zeros((1, L))
     else:
-        G = grasp.getGt().transpose()
-        Jt = jacobian.getJ().transpose()
+        G = grasp.Gt.transpose()
+        Jt = jacobian.J.transpose()
         e = []
         E = np.array([1, 0, 0]).reshape(1, 3)
         for _ in range(nc):
@@ -146,14 +146,32 @@ def Force_closure(grasp, jacobian):
             return np.zeros((1, L))
 
 
-def alpha_from_direction(grasp, d_ext, fc_max=2, ng=8, mu=0.3):
+def alpha_from_direction(grasp, d_ext, fc_max=10):
+    G = grasp.Gt.transpose()
+    L = grasp.l
+    if get_rank(G) != 6:
+        # print("ERROR: rank of G is not equal to 6")
+        # print("Cant Calculate Alpha")
+        return -1, -1 * np.ones((1, L))
+    if not grasp.graspable:
+        # print("ERROR: G is not Graspable")
+        # print("Friction Form Closure does not Exist")
+        return -1, -1 * np.ones((1, L))
+    not_hf = False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            not_hf = True
+            break
+    if not_hf:
+        print(
+            "ERROR: Original definition of contact models is not Hard Finger for all contacts"
+        )
+        return -1, -1 * np.ones((1, L))
     if not isinstance(d_ext, np.ndarray):
         d_ext = np.array(d_ext)
     FORCE_COEFF = 0.2
-    G = grasp.get_grasp_matrix_t().transpose()
-    nc = grasp.C.shape[0]
-    L = np.shape(G)[1]
-    F = gen_F(nc, ng, mu)
+    nc = grasp.nc
+    F = grasp.F
     lF = np.shape(F)[0]
 
     obj = np.zeros((L + 1, 1))
@@ -194,19 +212,19 @@ def alpha_from_direction(grasp, d_ext, fc_max=2, ng=8, mu=0.3):
         return opt.x[0], opt.x[1:]
     else:
         # print("Task Metric does not Exist")
-        return -1, np.zeros((1, L))
+        return -1, -1 * np.ones((1, L))
 
 
-def fcn_from_g(grasp, g, fc_max, ng=8, mu=0.3):
+def fcn_from_g(grasp, g, fc_max):
     if not isinstance(g, np.ndarray):
         g = np.array(g)
 
     FORCE_COEFF = 0.2
 
-    G = grasp.get_grasp_matrix_t().transpose()
-    nc = grasp.C.shape[0]
-    L = np.shape(G)[1]
-    F = gen_F(nc, ng, mu)
+    G = grasp.Gt.transpose()
+    nc = grasp.nc
+    L = grasp.l
+    F = grasp.F
     lF = np.shape(F)[0]
 
     obj = np.zeros((L, 1))
@@ -245,4 +263,4 @@ def fcn_from_g(grasp, g, fc_max, ng=8, mu=0.3):
         return opt.x
     else:
         # print("Task Metric does not Exist")
-        return np.zeros((1, L))
+        return -1 * np.ones((1, L))

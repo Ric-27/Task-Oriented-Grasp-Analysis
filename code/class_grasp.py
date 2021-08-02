@@ -1,35 +1,66 @@
 import sys
 import numpy as np
-from scipy.linalg import block_diag, null_space
-from math_tools import gen_H, get_S
+from scipy.linalg import null_space
+from math_tools import get_S, block_diag, list_to_vertical_matrix
 
 np.set_printoptions(suppress=True)
 
 
 class Grasp:
-    def __init__(self, p, C, R, h=None):
-        assert C.shape[0] == R.shape[0], "C and R must have the number of elements"
-        assert (
-            R.shape[1] == 3 and R.shape[2] == 3
-        ), "Contact Rotation Elements must be 3x3"
-        assert C.shape[1] == 3, "Contact Location Elements must be in 3d"
+    def __init__(self, p, contact_points):
         self.p = p
-        self.C = C
-        self.R = R
-        if not isinstance(h, np.ndarray):
-            h = np.array(["H" for _ in range(C.shape[0])])
-        else:
-            assert (
-                h.size == C.shape[0]
-            ), "The amount of Contact Model Elements must be the same as Contact Points"
-            for hi in h:
-                if hi != "S" and hi != "H" and hi != "P":
-                    sys.exit(
-                        "ERROR: Values inside h must be H for hardfinger, S for softfinger or P for point contact. NOT: {}".format(
-                            hi
-                        )
-                    )
-        self.h = h
+        self.contact_points = contact_points
+        self.nc = contact_points.shape[0]
+        self.H = np.zeros(1)
+        self.Gt = np.zeros(1)
+        self.F = None
+        self.l = 0
+        self.indeterminate = -1
+        self.graspable = -1
+        self.updt_H()
+        self.updt_classification()
+        not_hf = False
+        for contact in contact_points:
+            if contact.type != "HF":
+                print(
+                    "One or more contact point was not HF, cant use the quality metrics"
+                )
+                not_hf = True
+                break
+        if not not_hf:
+            self.updt_F()
+
+    def updt_F(self):
+        fi = []
+        for contact in self.contact_points:
+            fi.append(contact.F)
+        self.F = block_diag(fi)
+
+    def updt_H(self):
+        hi = []
+        for contact in self.contact_points:
+            hi.append(contact.h)
+            self.l += contact.l
+        self.H = block_diag(hi)
+
+    def get_Gt(self):
+        self.updt_Gt()
+        return self.Gt
+
+    def get_classification(self, print_bool=False):
+        self.updt_classification()
+        if print_bool:
+            print("-" * 25)
+            print("GRASP CLASSIFICATION: ")
+            if not self.indeterminate:
+                print("Nullspace(Gt): trivial --> Not Indeterminate")
+            else:
+                print("Nullspace(Gt): not trivial --> Indeterminate")
+            if not self.graspable:
+                print("Nullspace(G): trivial --> Not Graspable")
+            else:
+                print("Nullspace(G): not trivial --> Graspable")
+        return self.indeterminate, self.graspable
 
     def __pi(self, ci):
         return np.block(
@@ -40,23 +71,21 @@ class Grasp:
         )
 
     def __pGi_t(self, Ri, Pi):
-        R = block_diag(*([Ri] * 2))
+        R = block_diag([Ri, Ri])
         result = np.dot(R.transpose(), Pi.transpose())
         return result
 
-    def get_grasp_matrix_t(self):
-        pG = self.__pGi_t(self.R[0], self.__pi(self.C[0])).transpose()
-        for i in range(1, self.C.shape[0]):
-            pGi = self.__pGi_t(self.R[i], self.__pi(self.C[i])).transpose()
-            pG = np.concatenate((pG, pGi), axis=1)
+    def updt_Gt(self):
+        pGt = []
+        for contact in self.contact_points:
+            pGt.append(self.__pGi_t(contact.r, self.__pi(contact.c)))
+        pGt = list_to_vertical_matrix(pGt)
+        self.Gt = np.dot(self.H, pGt)
 
-        G_t = np.dot(gen_H(self.h), pG.transpose())
-        return G_t
-
-    def get_grasp_classification(self, print_bool=False):
+    def updt_classification(self):
         graspable = True
         indeterminate = True
-        Gt = self.get_grasp_matrix_t()
+        Gt = self.get_Gt()
         G = Gt.transpose()
 
         ns_Gt = null_space(Gt).round(2)
@@ -90,17 +119,6 @@ class Grasp:
                 graspable = True
         else:
             graspable = False
-        if print_bool:
-            print("-" * 25)
-            print("GRASP CLASSIFICATION: ")
-            if not indeterminate:
-                print("Nullspace(Gt): trivial --> Not Indeterminate")
-            else:
-                print(
-                    "Nullspace(Gt): not trivial --> Indeterminate"
-                )  # \nN(Gt):\n",ns_Gt)
-            if not graspable:
-                print("Nullspace(G): trivial --> Not Graspable")
-            else:
-                print("Nullspace(G): not trivial --> Graspable")  # \nN(G):\n")#,ns_G)
-        return indeterminate, graspable
+
+        self.indeterminate = indeterminate
+        self.graspable = graspable

@@ -2,9 +2,9 @@ import numpy as np
 from scipy.linalg import block_diag, null_space
 from class_jacobian import Jacobian
 from class_grasp import Grasp
-from data_types import Finger, Joint
-from math_tools import getRank
-from quality_metrics import testForceClosure
+from data_types import Finger, Joint, Contact
+from math_tools import get_rank, check_equal_matrices
+from quality_metrics import force_closure
 
 zv = np.array([0, 0, 1]).reshape(3, 1)
 
@@ -71,16 +71,16 @@ H = fH(h)
 # print(H.shape)
 Gt = np.dot(H, pGt)
 # print(Gt)
+contact1 = Contact(c1, R1)
+contact2 = Contact(c2, R2)
+C = np.array([contact1, contact2])
 
-C = np.array([c1, c2])
-R = np.array([R1, R2])
+grasp = Grasp(p, C)
 
-grasp = Grasp(p, C, R, h)
+Gtclass = grasp.Gt
 
-Gtclass = grasp.get_grasp_matrix_t()
-
-if (Gt == Gtclass).all():
-    print("correct implementation of Grasp Class")
+if check_equal_matrices(Gt, Gtclass):
+    print("correct writting of Grasp Class")
 else:
     print("ERROR: Gt Matrices are different")
 
@@ -137,46 +137,38 @@ pJ2 = np.dot(block_diag(*([R2] * 2)).transpose(), Z2)
 pJ3 = np.dot(block_diag(*([R3] * 2)).transpose(), Z3)
 
 pJ = np.concatenate((pJ1, pJ2), axis=0)
-J = H @ pJ
+Jnoob = H @ pJ
 
-q1 = Joint(1, q1c, zv, -1)
-q2 = Joint(2, q2c, zv, 0)
-q3 = Joint(3, q3c, zv, -1)
-q4 = Joint(4, q4c, zv, -1)
-q5 = Joint(5, q5c, zv, 1)
+q1 = Joint(1, q1c, zv)
+q2 = Joint(2, q2c, zv, c1)
+q3 = Joint(3, q3c, zv)
+q4 = Joint(4, q4c, zv)
+q5 = Joint(5, q5c, zv, c2)
 
 f1 = Finger(1, np.array([q1, q2]))
 f2 = Finger(2, np.array([q3, q4, q5]))
 
 f = np.array([f1, f2])
 
-jacobian = Jacobian(f, C, R, h)
-Jclass = jacobian.getJ()
+jacobian = Jacobian(f, C)
+Jclass = jacobian.J
 
-if (J == Jclass).all():
+if check_equal_matrices(Jnoob, Jclass):
     print("correct implementation of Jacobian Class")
 else:
     print("ERROR: J Matrices are different")
 
-
-print("Gt: \n", grasp.getGt())
-grasp.GraspClassification(True)
-print("Rank G:", getRank(Gtclass.transpose()))
+print("Gt: \n", Gtclass)
+grasp.get_classification(True)
+print("Rank G:", get_rank(Gtclass.transpose()))
 
 print("*" * 25)
-
-print("J: \n", Jclass)
-jacobian.JacobianClassification(True)
-print("Rank J:", getRank(Jclass))
-jacobian.printHandSpecifications()
+jacobian.get_classification(True)
+print("Rank J:", get_rank(Jclass))
+jacobian.get_hand_architecture()
 
 
 ns_G = null_space(Gt.transpose())
-ns_Jt = null_space(J.transpose())
+ns_Jt = null_space(Jnoob.transpose())
 
-"""if np.intersect1d(ns_G, ns_Jt).all() == 0:
-    print("Force Closure Exists")
-else:
-    print("Force Closure Doesn't Exists")
-"""
-testForceClosure(grasp, jacobian)
+force_closure(grasp, jacobian)
