@@ -1,6 +1,6 @@
-[] git
-[] comentar clases
-[] docus
+[X] git
+[X] comentar clases
+[X] docus
 [X] reporte
 
 [X] corregir grasp y jacobiano para que siempre retorne los valores e imprimir sea opcional
