@@ -1,5 +1,4 @@
 import sys
-import scipy
 from scipy.optimize import linprog
 import numpy as np
 from math_tools import get_rank, gen_F
@@ -147,9 +146,10 @@ def Force_closure(grasp, jacobian):
             return np.zeros((1, L))
 
 
-def task_oriented(grasp, dExt, fcmax=2, ng=8, mu=0.3):
-    if not isinstance(dExt, np.ndarray):
-        dExt = np.array(dExt)
+def alpha_from_direction(grasp, d_ext, fc_max=2, ng=8, mu=0.3):
+    if not isinstance(d_ext, np.ndarray):
+        d_ext = np.array(d_ext)
+    FORCE_COEFF = 0.2
     G = grasp.get_grasp_matrix_t().transpose()
     nc = grasp.C.shape[0]
     L = np.shape(G)[1]
@@ -164,12 +164,12 @@ def task_oriented(grasp, dExt, fcmax=2, ng=8, mu=0.3):
     )  # 0*alpha - F*fc <= 0 (F*fc > 0)
     rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
 
-    lhs_eq = np.concatenate((dExt.reshape(6, 1), G), axis=1)  # dWext*alpha + G*fc = 0
+    lhs_eq = np.concatenate((d_ext.reshape(6, 1), G), axis=1)  # dWext*alpha + G*fc = 0
     rhs_eq = np.zeros((6, 1)).flatten()
 
     bnd_alpha = (0, None)
-    bnd_fcn = (sys.float_info.epsilon, fcmax)
-    bnd_fct = (None, None)
+    bnd_fcn = (sys.float_info.epsilon, fc_max)
+    bnd_fct = (-FORCE_COEFF * fc_max, FORCE_COEFF * fc_max)
 
     bnd = []
     bnd.append(bnd_alpha)
@@ -195,3 +195,54 @@ def task_oriented(grasp, dExt, fcmax=2, ng=8, mu=0.3):
     else:
         # print("Task Metric does not Exist")
         return -1, np.zeros((1, L))
+
+
+def fcn_from_g(grasp, g, fc_max, ng=8, mu=0.3):
+    if not isinstance(g, np.ndarray):
+        g = np.array(g)
+
+    FORCE_COEFF = 0.2
+
+    G = grasp.get_grasp_matrix_t().transpose()
+    nc = grasp.C.shape[0]
+    L = np.shape(G)[1]
+    F = gen_F(nc, ng, mu)
+    lF = np.shape(F)[0]
+
+    obj = np.zeros((L, 1))
+    for i in range(L):
+        if i % 3 == 0:
+            obj[i] = -1
+
+    lhs_ineq = -F  # F*fc <= 0 (F*fc > 0)
+    rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
+
+    lhs_eq = G  # G*fc = -g (G*fc + alpha*dext = 0)
+    rhs_eq = -g
+
+    bnd_fcn = (sys.float_info.epsilon, fc_max)
+    bnd_fct = (-FORCE_COEFF * fc_max, FORCE_COEFF * fc_max)
+
+    bnd = []
+
+    for i in range(L):
+        if i % 3 == 0:
+            bnd.append(bnd_fcn)
+        else:
+            bnd.append(bnd_fct)
+
+    opt = linprog(
+        c=obj,
+        A_ub=lhs_ineq,
+        b_ub=rhs_ineq,
+        A_eq=lhs_eq,
+        b_eq=rhs_eq,
+        bounds=bnd,
+        method="revised simplex",
+    )
+    if opt.success:
+        print("fc found")
+        return opt.x
+    else:
+        # print("Task Metric does not Exist")
+        return np.zeros((1, L))

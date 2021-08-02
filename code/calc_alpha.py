@@ -1,9 +1,9 @@
 # importing the module
 import ast
+from quality_metrics import alpha_from_direction
 import numpy as np
 from class_stl import STL
 from class_grasp import Grasp
-from quality_metrics import task_oriented
 from math_tools import get_rank
 
 # np.set_printoptions(suppress=True)
@@ -137,7 +137,7 @@ for fmax in F_MAXS:
             all_forces = []
 
             for dExt in DIR_W_EXT:
-                al, forces = task_oriented(grasp, dExt, fmax, 8, 0.3)
+                al, forces = alpha_from_direction(grasp, dExt, fmax, 8, 0.3)
                 alphas.append(round(al, DECIMAL_PLACES))
                 all_forces.append(forces.round(DECIMAL_PLACES))
 
