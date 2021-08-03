@@ -7,39 +7,62 @@ from class_grasp import Grasp
 
 np.set_printoptions(suppress=True)
 
-obj = "petri"
-grsp = "c6"
+OBJ = ""
+GRSP = ""
 
 # reading the data from the file
-with open("./code/textfiles/grasps.txt") as f:
+with open("./code/textfiles/final_grasps.txt") as f:
     data_grasps = f.read()
 data_grasps = ast.literal_eval(data_grasps)
 
+skip = False
+
 for key, value in data_grasps.items():
-    if obj != "" and grsp != "":
-        key = obj + "_" + grsp
-    coord = data_grasps[key].copy()
-    path = "./stl/" + coord.pop(0) + ".stl"
-    var = np.array(coord)  # .reshape((int(len(coord) / 4), 4))
-    print(key)
-    print("nc:", var.shape[0])
-    mesh = STL(path)
-    contact_points = []
-    for point in var:
-        contact_points.append(
-            mesh.gen_C_from_coordinates(
-                np.array([point[0], point[1], point[2]], dtype=np.float64),
-                point[3].upper(),
+    if OBJ != "":
+        if GRSP != "":
+            key = OBJ + "_" + GRSP
+        else:
+            head, partition, tail = key.partition("_")
+            head2 = tail.partition("_")[0]
+            if head2 != tail:
+                head += "_" + head2
+            if OBJ != head:
+                skip = True
+
+    if not skip:
+        path = "./stl/" + data_grasps[key].pop(0) + ".stl"
+        contacts = np.array(data_grasps[key])
+        mesh = STL(path)
+        contact_points = []
+        for pt in contacts:
+            contact_points.append(
+                mesh.gen_C_from_coordinates(
+                    np.array([pt[0], pt[1], pt[2]], dtype=np.float64),
+                    pt[3].upper(),
+                )
+            )
+        contact_points = list_to_vertical_matrix(contact_points)
+        print("{} \t nc: {}".format(key, contacts.shape[0]))
+        mesh.view(contact_points)
+
+        """
+        print(
+            "X: {} - {} \t Y: {} - {} \t Z: {} - {}".format(
+                min(mesh.vertices[:, 0]),
+                max(mesh.vertices[:, 0]),
+                min(mesh.vertices[:, 1]),
+                max(mesh.vertices[:, 1]),
+                min(mesh.vertices[:, 2]),
+                max(mesh.vertices[:, 2]),
             )
         )
 
-    contact_points = list_to_vertical_matrix(contact_points)
+        # grasp = Grasp(mesh.cog, contact_points)
+        # print("Gt \n", grasp.Gt)
+        # grasp.get_classification(True)
+        """
 
-    grasp = Grasp(mesh.cog, contact_points)
-    print("Gt \n", grasp.Gt)
-    grasp.get_classification(True)
+    skip = False
 
-    mesh.view(contact_points)
-
-    if obj != "" and grsp != "":
+    if OBJ == key:
         break
