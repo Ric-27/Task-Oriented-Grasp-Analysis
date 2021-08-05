@@ -91,14 +91,13 @@ class STL:
                 cy = contact.c[1]
                 cz = contact.c[2]
 
-                ax.scatter(cx, cy, cz, color="red")
+                ax.scatter(cx, cy, cz, color="black")
                 ax.plot(
                     (cx, (cx + n[0] * biggest * 0.1)),
                     (cy, (cy + n[1] * biggest * 0.1)),
                     (cz, (cz + n[2] * biggest * 0.1)),
                     color="red",
                 )
-
                 ax.plot(
                     (cx, (cx + t[0] * biggest * 0.1)),
                     (cy, (cy + t[1] * biggest * 0.1)),
@@ -111,7 +110,6 @@ class STL:
                     (cz, (cz + o[2] * biggest * 0.1)),
                     color="blue",
                 )
-
         plt.show()
 
     def gen_C_randomly(self, nc, mu=0.3, iota=0, ng=8):

@@ -19,10 +19,13 @@ This project uses Python **3.8** *(3.6 was also tested and it worked)*
 
 This project needs the following python libraries to work:
 
-- matplotlib
-- numpy
-- numpy-stl
-- scipy
+- numpy (everything)
+- matplotlib (only for stl class)
+- numpy-stl (only for stl class)
+- scipy (only for the quality metrics)
+- pandas (only to save to excel)
+- openpyxl (only to save to excel)
+- ast (only to save to excel)
 
 The other requirements should be already on your system as they normally come with Python.
 

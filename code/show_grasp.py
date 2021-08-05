@@ -7,8 +7,8 @@ from class_grasp import Grasp
 
 np.set_printoptions(suppress=True)
 
-OBJ = ""
-GRSP = ""
+OBJ = "marker_cap"
+GRSP = "f17"
 
 # reading the data from the file
 with open("./code/textfiles/final_grasps.txt") as f:

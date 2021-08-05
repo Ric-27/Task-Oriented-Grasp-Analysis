@@ -97,29 +97,24 @@ with open("./code/textfiles/final_grasps.txt") as f:
     data_grasps = f.read()
 data_grasps = ast.literal_eval(data_grasps)
 
-skip = False
-
 index = []
 data = []
 
-for key, value in data_grasps.items():
+skip = False
+for key_grasp, value_grasp in data_grasps.items():
+    obj = key_grasp.partition(" ")[0]
+    grsp = key_grasp.partition(" ")[2]
     if OBJ != "":
-        if GRSP != "":
-            key = OBJ + "_" + GRSP
-        else:
-            head, partition, tail = key.partition("_")
-            head2 = tail.partition("_")[0]
-            if head2 != tail:
-                head += "_" + head2
-            if OBJ != head:
+        if OBJ != obj:
+            skip = True
+        elif GRSP != "":
+            if GRSP != grsp:
                 skip = True
-
-    print("analysing ", key)
-    index.append(str(key))
-
     if not skip:
-        path = "./stl/" + data_grasps[key].pop(0) + ".stl"
-        contacts = np.array(data_grasps[key])
+        index.append(key_grasp)
+        print("analysing... \t", key_grasp)
+        path = "./stl/" + obj + ".stl"
+        contacts = np.array(value_grasp)
         mesh = STL(path)
         contact_points = []
         for pt in contacts:
@@ -144,28 +139,29 @@ for key, value in data_grasps.items():
         data.append(data_obj)
     skip = False
 
-    if OBJ == key:
+    if OBJ == key_grasp:
         break
 
-columns = []
-for f_max in F_MAXS:
-    for key_dir in DIR_W_EXT.keys():
-        columns.append(key_dir + " <" + str(f_max) + ">")
-    columns.append("")
+if OBJ == "" and GRSP == "":
+    columns = []
+    for f_max in F_MAXS:
+        for key_dir in DIR_W_EXT.keys():
+            columns.append(key_dir + " <" + str(f_max) + ">")
+        columns.append("")
 
-data = np.array(data)
+    data = np.array(data)
 
-grasp_info = {}
-for i, col in enumerate(columns, 0):
-    grasp_info[col] = data[:, i]
+    grasp_info = {}
+    for i, col in enumerate(columns, 0):
+        grasp_info[col] = data[:, i]
 
-book = load_workbook("Task Oriented Analysis.xlsx")
-writer = pd.ExcelWriter("Task Oriented Analysis.xlsx", engine="openpyxl")
-writer.book = book
-writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-df = pd.DataFrame(grasp_info, index, columns)
+    book = load_workbook("Task Oriented Analysis.xlsx")
+    writer = pd.ExcelWriter("Task Oriented Analysis.xlsx", engine="openpyxl")
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    df = pd.DataFrame(grasp_info, index, columns)
 
-df.to_excel(writer, sheet_name="raw alpha", index=True, na_rep="-")
-writer.save()
+    df.to_excel(writer, sheet_name="raw alpha", index=True, na_rep="-")
+    writer.save()
 
-print("saved alpha onto excel as raw data")
+    print("saved alpha onto excel as raw data")

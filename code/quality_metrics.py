@@ -1,7 +1,9 @@
 import sys
 from scipy.optimize import linprog
 import numpy as np
+
 from math_tools import get_rank
+from class_jacobian import Jacobian
 from class_grasp import Grasp
 
 
@@ -12,11 +14,11 @@ def friction_form_closure(grasp):
 
     if get_rank(G) != 6:
         # print("Friction Form Closure does not Exist: Rank of G < 6")
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     graspable = grasp.graspable
     if not graspable:
         # print("Friction Form Closure does not Exist: G not graspable")
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     not_hf = False
     for contact in grasp.contact_points:
         if contact.type != "HF":
@@ -26,7 +28,7 @@ def friction_form_closure(grasp):
         # print(
         #    "ERROR: Original definition of contact models is not Hard Finger for all contacts"
         # )
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     nc = grasp.nc
 
     F = grasp.F
@@ -95,11 +97,12 @@ def friction_form_closure(grasp):
         print(
             "Friction Form Closure does not Exist: Linear Programming Problem doesn't have a solution"
         )
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
 
 
 def force_closure(grasp, jacobian):
-    assert isinstance(grasp, Grasp), "grasp must be an object of type Grasp"
+    assert isinstance(grasp, Grasp), "grasp argument must be of type Grasp"
+    assert isinstance(jacobian, Jacobian), "jacobian argument must be of type Jacobian"
     nc = grasp.nc
     L = grasp.l
 
@@ -108,7 +111,7 @@ def force_closure(grasp, jacobian):
         print(
             "Force Closure does not Exist because Friction Form Closure does not Exist"
         )
-        return np.zeros((1, L))
+        return np.zeros((L,))
     else:
         G = grasp.Gt.transpose()
         Jt = jacobian.J.transpose()
@@ -162,20 +165,21 @@ def force_closure(grasp, jacobian):
             return l
         else:
             print("Force Closure does not Exist")
-            return np.zeros((1, L))
+            return np.zeros((L,))
 
 
 def alpha_from_direction(grasp, d_ext, fc_max=10):
+    assert isinstance(grasp, Grasp), "grasp argument must be of type Grasp"
     G = grasp.Gt.transpose()
     L = grasp.l
     if get_rank(G) != 6:
         # print("ERROR: rank of G is not equal to 6")
         # print("Cant Calculate Alpha")
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     if not grasp.graspable:
         # print("ERROR: G is not Graspable")
         # print("Friction Form Closure does not Exist")
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     not_hf = False
     for contact in grasp.contact_points:
         if contact.type != "HF":
@@ -185,7 +189,7 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
         print(
             "ERROR: Original definition of contact models is not Hard Finger for all contacts"
         )
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
     if not isinstance(d_ext, np.ndarray):
         d_ext = np.array(d_ext)
     FORCE_COEFF = 0.2
@@ -231,18 +235,36 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
         return opt.x[0], opt.x[1:]
     else:
         # print("Task Metric does not Exist")
-        return -1, np.zeros((1, L))
+        return -1, np.zeros((L,))
 
 
-def fcn_from_g(grasp, g, fc_max):
+def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
+    G = grasp.Gt.transpose()
+    L = grasp.l
+    assert start > 0 and end > 0 and step > 0, "start, end and step must be > 0"
+    if get_rank(G) != 6:
+        # print("ERROR: rank of G is not equal to 6")
+        # print("Cant Calculate Fc")
+        return 0, np.zeros((L,))
+    if not grasp.graspable:
+        # print("ERROR: G is not Graspable")
+        # print("Fc cant be found")
+        return 0, np.zeros((L,))
+    not_hf = False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            not_hf = True
+            break
+    if not_hf:
+        print(
+            "ERROR: Original definition of contact models is not Hard Finger for all contacts"
+        )
+        return -1 * np.ones((L,))
     if not isinstance(g, np.ndarray):
         g = np.array(g)
 
     FORCE_COEFF = 0.2
 
-    G = grasp.Gt.transpose()
-    nc = grasp.nc
-    L = grasp.l
     F = grasp.F
     lF = np.shape(F)[0]
 
@@ -257,29 +279,37 @@ def fcn_from_g(grasp, g, fc_max):
     lhs_eq = G  # G*fc = -g (G*fc + alpha*dext = 0)
     rhs_eq = -g
 
-    bnd_fcn = (sys.float_info.epsilon, fc_max)
-    bnd_fct = (-FORCE_COEFF * fc_max, FORCE_COEFF * fc_max)
+    finished = False
+    fc_max = start
+    while not finished:
+        bnd_fcn = (sys.float_info.epsilon, fc_max)
+        bnd_fct = (-FORCE_COEFF * fc_max, FORCE_COEFF * fc_max)
 
-    bnd = []
+        bnd = []
 
-    for i in range(L):
-        if i % 3 == 0:
-            bnd.append(bnd_fcn)
-        else:
-            bnd.append(bnd_fct)
+        for i in range(L):
+            if i % 3 == 0:
+                bnd.append(bnd_fcn)
+            else:
+                bnd.append(bnd_fct)
 
-    opt = linprog(
-        c=obj,
-        A_ub=lhs_ineq,
-        b_ub=rhs_ineq,
-        A_eq=lhs_eq,
-        b_eq=rhs_eq,
-        bounds=bnd,
-        method="revised simplex",
-    )
+        opt = linprog(
+            c=obj,
+            A_ub=lhs_ineq,
+            b_ub=rhs_ineq,
+            A_eq=lhs_eq,
+            b_eq=rhs_eq,
+            bounds=bnd,
+            method="revised simplex",
+        )
+        finished = opt.success
+        fc_max += step
+        if fc_max > end:
+            finished = True
+
     if opt.success:
-        print("fc found")
-        return opt.x
+        # print("fc found")
+        return fc_max, opt.x
     else:
         # print("Task Metric does not Exist")
-        return -1 * np.ones((1, L))
+        return -end, np.zeros((L,))

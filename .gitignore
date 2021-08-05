@@ -9,8 +9,6 @@ __pycache__/
 
 .vscode/
 
-deprecated/
-
 # Distribution / packaging
 .Python
 build/
@@ -185,4 +183,6 @@ $RECYCLE.BIN/
 *.lnk
 
 ~$*
-code/textfiles/todo.txt
+deprecated/
+todo.txt
+sub_task.txt
