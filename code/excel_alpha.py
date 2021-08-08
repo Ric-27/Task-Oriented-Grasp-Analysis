@@ -1,4 +1,4 @@
-# importing the module
+# importing the modules
 import ast
 from openpyxl import load_workbook
 import numpy as np
@@ -129,11 +129,11 @@ for key_grasp, value_grasp in data_grasps.items():
         grasp = Grasp(mesh.cog, contact_points)
         data_obj = []
         for f_max in F_MAXS:
-            alphas = []
             for d_w_ext in DIR_W_EXT.values():
-                alpha = alpha_from_direction(grasp, d_w_ext, f_max)[0]
-                data_obj.append(alpha if alpha >= 0 else "")
-            data_obj.append("")
+                data_obj.append(
+                    alpha_from_direction(grasp, d_w_ext, f_max)[0]
+                )  # if alpha > 0 else 0)
+            # data_obj.append("")
 
         data_obj = np.array(data_obj).flatten()
         data.append(data_obj)
@@ -147,21 +147,31 @@ if OBJ == "" and GRSP == "":
     for f_max in F_MAXS:
         for key_dir in DIR_W_EXT.keys():
             columns.append(key_dir + " <" + str(f_max) + ">")
-        columns.append("")
+        # columns.append("")
+    columns1 = []
+    for key_dir in DIR_W_EXT.keys():
+        for f_max in F_MAXS:
+            columns1.append(key_dir + " <" + str(f_max) + ">")
+        # columns1.append("")
 
     data = np.array(data)
-
     grasp_info = {}
     for i, col in enumerate(columns, 0):
         grasp_info[col] = data[:, i]
+
+    grasp_info1 = {}
+    for col in columns1:
+        grasp_info1[col] = grasp_info[col]
+
+    df = pd.DataFrame(grasp_info, index, columns)
+    df1 = pd.DataFrame(grasp_info1, index, columns1)
 
     book = load_workbook("Task Oriented Analysis.xlsx")
     writer = pd.ExcelWriter("Task Oriented Analysis.xlsx", engine="openpyxl")
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    df = pd.DataFrame(grasp_info, index, columns)
-
     df.to_excel(writer, sheet_name="raw alpha", index=True, na_rep="-")
+    df1.to_excel(writer, sheet_name="raw alpha mod", index=True, na_rep="-")
     writer.save()
 
     print("saved alpha onto excel as raw data")

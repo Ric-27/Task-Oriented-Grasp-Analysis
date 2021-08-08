@@ -19,6 +19,7 @@ data_grasps = ast.literal_eval(data_grasps)
 
 index = []
 data = []
+counter = 0
 
 skip = False
 for key_grasp, value_grasp in data_grasps.items():
@@ -31,7 +32,8 @@ for key_grasp, value_grasp in data_grasps.items():
             if GRSP != grsp:
                 skip = True
     if not skip:
-        index.append(key_grasp)
+        counter += 1
+        index.append(counter)
         print("analysing... \t", key_grasp)
         path = "./stl/" + obj + ".stl"
         contacts = np.array(value_grasp)
@@ -50,6 +52,7 @@ for key_grasp, value_grasp in data_grasps.items():
         d = friction_form_closure(grasp)[0]
         data.append(
             [
+                key_grasp,
                 grasp.nc,
                 get_rank(grasp.Gt.transpose()),
                 "True" if grasp.indeterminate else "False",
@@ -60,7 +63,7 @@ for key_grasp, value_grasp in data_grasps.items():
     skip = False
 
 if OBJ == "" and GRSP == "":
-    columns = ["nc", "rank", "indeterminate", "graspable", "FFC"]
+    columns = ["grasp_name", "nc", "rank", "indeterminate", "graspable", "FFC"]
     data = np.array(data)
     grasp_info = {}
     for i, col in enumerate(columns, 0):

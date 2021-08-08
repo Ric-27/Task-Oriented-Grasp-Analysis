@@ -175,11 +175,11 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
     if get_rank(G) != 6:
         # print("ERROR: rank of G is not equal to 6")
         # print("Cant Calculate Alpha")
-        return -1, np.zeros((L,))
+        return np.zeros((L + 1,))
     if not grasp.graspable:
         # print("ERROR: G is not Graspable")
         # print("Friction Form Closure does not Exist")
-        return -1, np.zeros((L,))
+        return np.zeros((L + 1,))
     not_hf = False
     for contact in grasp.contact_points:
         if contact.type != "HF":
@@ -189,11 +189,12 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
         print(
             "ERROR: Original definition of contact models is not Hard Finger for all contacts"
         )
-        return -1, np.zeros((L,))
+        return np.zeros((L + 1,))
+
     if not isinstance(d_ext, np.ndarray):
         d_ext = np.array(d_ext)
+
     FORCE_COEFF = 0.2
-    nc = grasp.nc
     F = grasp.F
     lF = np.shape(F)[0]
 
@@ -203,10 +204,16 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
     lhs_ineq = np.concatenate(
         (np.zeros((lF, 1)), -F), axis=1
     )  # 0*alpha - F*fc <= 0 (F*fc > 0)
-    rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
+    rhs_ineq = -sys.float_info.epsilon * np.ones((lF, 1)).flatten()
 
-    lhs_eq = np.concatenate((d_ext.reshape(6, 1), G), axis=1)  # dWext*alpha + G*fc = 0
-    rhs_eq = np.zeros((6, 1)).flatten()
+    lhs_eq = np.concatenate(
+        (
+            d_ext.reshape(6, 1),
+            G,
+        ),
+        axis=1,
+    )  # dWext*alpha + G*fc = 0
+    rhs_eq = np.zeros((6,))
 
     bnd_alpha = (0, None)
     bnd_fcn = (sys.float_info.epsilon, fc_max)
@@ -231,11 +238,11 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
         method="revised simplex",
     )
     if opt.success:
-        # print("Task Metric Exists with alpha =", abs(opt.fun))
+        # print("Metric exists with alpha =", abs(opt.fun))
         return opt.x[0], opt.x[1:]
     else:
         # print("Task Metric does not Exist")
-        return -1, np.zeros((L,))
+        return np.zeros((L + 1,))
 
 
 def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
@@ -245,11 +252,11 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
     if get_rank(G) != 6:
         # print("ERROR: rank of G is not equal to 6")
         # print("Cant Calculate Fc")
-        return 0, np.zeros((L,))
+        return end * 10, np.zeros((L,))
     if not grasp.graspable:
         # print("ERROR: G is not Graspable")
         # print("Fc cant be found")
-        return 0, np.zeros((L,))
+        return end * 10, np.zeros((L,))
     not_hf = False
     for contact in grasp.contact_points:
         if contact.type != "HF":
@@ -259,7 +266,7 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
         print(
             "ERROR: Original definition of contact models is not Hard Finger for all contacts"
         )
-        return -1 * np.ones((L,))
+        return end * 10, np.zeros((L,))
     if not isinstance(g, np.ndarray):
         g = np.array(g)
 
@@ -309,7 +316,7 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
 
     if opt.success:
         # print("fc found")
-        return fc_max, opt.x
+        return fc_max - step, opt.x
     else:
         # print("Task Metric does not Exist")
-        return -end, np.zeros((L,))
+        return end * 10, np.zeros((L,))

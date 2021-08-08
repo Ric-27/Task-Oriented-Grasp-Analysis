@@ -26,6 +26,7 @@ data_force = ast.literal_eval(data_force)
 skip = False
 
 ALPHA = 1
+END = 100
 index = []
 
 data = np.zeros((len(data_grasps), len(data_force)))
@@ -71,13 +72,16 @@ for key_grasp, value_grasp in data_grasps.items():
 
             if not skip2 and obj == obj_force:
                 d_w_ext = value_force
-                fc_max, fc = fc_from_g(grasp, d_w_ext)
+                fc_max, fc = fc_from_g(grasp, d_w_ext, end=END)
                 fcn = fc[::3]
-                data[row, col] = fc_max if fc_max > 0 else None
+                data[row, col] = fc_max
                 fcn_str = ""
                 for val in fcn:
-                    fcn_str += str(val.round(3)) + "|"
-                data1[row, col] = fcn_str
+                    if fc_max > END:
+                        fcn_str += "-|"
+                    else:
+                        fcn_str += str(val.round(3)) + "|"
+                data1[row, col] = fcn_str[: len(fcn_str) - 1]
                 if OBJ != "" or GRSP != "" or FRC != "":
                     print(key_grasp, frc, fc_max, fcn)
 
@@ -94,6 +98,7 @@ if OBJ == "" and GRSP == "" and FRC == "":
         columns.append(key_force)
 
     data[data == 0] = None
+    data1[data == 0] = None
     force_info = {}
     force_info1 = {}
     for i, col in enumerate(columns, 0):
@@ -106,8 +111,8 @@ if OBJ == "" and GRSP == "" and FRC == "":
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
 
-    df.to_excel(writer, sheet_name="raw forces", index=True, na_rep="")
-    df1.to_excel(writer, sheet_name="raw forces mod", index=True, na_rep="")
+    df.to_excel(writer, sheet_name="raw forces fmin", index=True, na_rep="")
+    df1.to_excel(writer, sheet_name="raw forces vec", index=True, na_rep="")
     writer.save()
 
     print("saved forces onto excel as raw data")
