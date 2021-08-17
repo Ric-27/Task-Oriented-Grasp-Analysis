@@ -14,7 +14,7 @@ GRSP = ""
 FRC = ""
 
 # reading the data from the file
-with open("./code/textfiles/final_grasps.txt") as f:
+with open("./code/textfiles/grasps.txt") as f:
     data_grasps = f.read()
 data_grasps = ast.literal_eval(data_grasps)
 

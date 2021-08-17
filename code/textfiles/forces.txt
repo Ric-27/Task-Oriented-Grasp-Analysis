@@ -1,14 +1,56 @@
 {
     #PETRI
-   "petri hold":[0,0,-0.147,0,0,0],
-   "petri write":[0,0,-2.612,0,0,0],
-   #MARKER
-   "marker hold_for_cap":[0,0.98,0,0,0,0],
-   "marker remove_cap":[0,0.98,-23,0,0,0],
-   "marker insert_cap":[0,0.98,34.436,0,0,0],
-   "marker write":[0,0,2.367,0,0,0],
-   #MARKER CAP
-   "marker_cap hold":[0,0.22,0,0,0,0],
-   "marker_cap be_removed":[0,0.22,23,0,0,0],
-   "marker_cap be_inserted":[0,0.22,-34.436,0,0,0],
+    "petri hold_on_air":[0.000,0.000,-0.147,0,0,0],
+    "petri be_written_while_in_air":[0.000,0.000,-2.612,0,0,0],
+    #MARKER
+    "marker hold_for_cap_removal":[0.000,0.098,0.000,0,0,0],
+    "marker remove_cap":[0.000,0.098,-23.000,0,0,0],
+    "marker put_cap_back_on":[0.000,0.098,34.436,0,0,0],
+    "marker hold_and_write":[0.000,0.000,2.367,0,0,0],
+    #MARKER CAP
+    "marker_cap hold_on_air":[0.000,0.022,0.000,0,0,0],
+    "marker_cap be_removed_from_body":[0.000,0.022,23.000,0,0,0],
+    "marker_cap be_inserted_onto_body":[0.000,0.022,-34.436,0,0,0],
+    #KIT
+    "kit hold_on_air":[0.000,0.000,-1.677,0,0,0],
+    "kit open":[0.000,0.000,18.323,0,0,0],
+    #KIT TAB
+    "kit_tab hold_on_air":[0.000,0.000,-0.004,0,0,0],
+    "kit_tab open":[0.000,0.000,-18.327,0,0,0],
+    #CANNISTER
+    "cannister hold_on_air":[0.000,0.000,-0.368,0,0,0],
+    "cannister be_inserted_onto_holder_":[0.000,0.000,86.799,0,0,0],
+    "cannister be_removed_from_holder":[0.000,0.000,-110.368,0,0,0],
+    #TUBE
+    "tube hold_on_air":[0.000,31.000,0.000,0,0,0],
+    "tube be_inserted_onto_cannister":[0.000,0.000,45.679,0,0,0],
+    #NEEDLE
+    "needle hold_and_remove_cap":[0.000,0.103,-9.400,0,0,0],
+    "needle hold_for_piercing":[0.000,0.000,-0.103,0,0,0],
+    "needle pierce_rinse_glass":[0.000,0.000,23.325,0,0,0],
+    "needle be_removed_from_rinse_glass":[0.000,0.000,-11.103,0,0,0],
+    "needle hold_for_absortion_of_vial":[0.103,0.000,0.000,0,0,0],
+    #NEEDLE CAP
+    "needle_cap hold_and_be_removed":[0.000,0.010,9.400,0,0,0],
+    #RINSE GLASS
+    "rinse_glass hold_on_air":[0.000,0.000,-5.511,0,0,0],
+    "rinse_glass hold_on_air_inverted":[0.000,0.000,5.511,0,0,0],
+    #RED PLUG
+    "red_plug hold_on_air":[0.000,0.000,-0.007,0,0,0],
+    "red_plug be_inserted_into_cannister":[0.000,0.000,35.929,0,0,0],
+    "red_plug be_removed_from_cannister":[0.000,0.000,-23.007,0,0,0],
+    #GLASS VIAL
+    "glass_vial hold_on_air":[0.000,0.000,-0.147,0,0,0],
+    "glass_vial hold_while_break":[50.000,0.000,-0.147,0,0,0],
+    #YELLOW PLUG
+    "yellow_plug hold_on_air":[0.000,0.000,-0.010,0,0,0],
+    "yellow_plug be_inserted_into_cannister":[0.000,0.000,2.329,0,0,0],
+    #TUBE CLAMP
+    "tube_clamp hold_on_air":[0.000,0.000,-0.039,0,0,0],
+    "tube_clamp clamp_tube_while_being_hold":[0.000,-40.776,-0.039,0,0,0],
+    "tube_clamp unclamp_tube_while_being_hold":[0.000,-3.100,3.061,0,0,0],
+    #SCISSORS
+    "scissors hold_on_air":[0.000,0.593,0.000,0,0,0],
+    "scissors cut_tube":[0.000,55.593,0.000,0,0,0],
+
 }

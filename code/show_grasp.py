@@ -7,8 +7,8 @@ from class_grasp import Grasp
 
 np.set_printoptions(suppress=True)
 
-OBJ = "marker_cap"
-GRSP = "f17"
+OBJ = "rinse"
+GRSP = "c6"
 
 # reading the data from the file
 with open("./code/textfiles/final_grasps.txt") as f:
@@ -20,7 +20,7 @@ skip = False
 for key, value in data_grasps.items():
     if OBJ != "":
         if GRSP != "":
-            key = OBJ + "_" + GRSP
+            key = OBJ + " " + GRSP
         else:
             head, partition, tail = key.partition("_")
             head2 = tail.partition("_")[0]
