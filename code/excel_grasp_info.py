@@ -23,8 +23,8 @@ counter = 0
 
 skip = False
 for key_grasp, value_grasp in data_grasps.items():
-    obj = key_grasp.partition(" ")[0]
-    grsp = key_grasp.partition(" ")[2]
+    obj = key_grasp.partition("-")[0]
+    grsp = key_grasp.partition("-")[2]
     if OBJ != "":
         if OBJ != obj:
             skip = True

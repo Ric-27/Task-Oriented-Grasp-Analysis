@@ -320,3 +320,70 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
     else:
         # print("Task Metric does not Exist")
         return end * 10, np.zeros((L,))
+
+
+def fc_from_g_v2(grasp, g):
+    G = grasp.Gt.transpose()
+    L = grasp.l
+    if get_rank(G) != 6:
+        # print("ERROR: rank of G is not equal to 6")
+        # print("Cant Calculate Fc")
+        return np.zeros((L,))
+    if not grasp.graspable:
+        # print("ERROR: G is not Graspable")
+        # print("Fc cant be found")
+        return np.zeros((L,))
+    not_hf = False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            not_hf = True
+            break
+    if not_hf:
+        print(
+            "ERROR: Original definition of contact models is not Hard Finger for all contacts"
+        )
+        return np.zeros((L,))
+    if not isinstance(g, np.ndarray):
+        g = np.array(g)
+
+    F = grasp.F
+    lF = np.shape(F)[0]
+
+    obj = np.zeros((L, 1))
+    for i in range(L):
+        if i % 3 == 0:
+            obj[i] = 1
+
+    lhs_ineq = -F  # F*fc <= 0 (F*fc > 0)
+    rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
+
+    lhs_eq = G  # G*fc = -g (G*fc + alpha*dext = 0)
+    rhs_eq = -g
+
+    bnd_fcn = (sys.float_info.epsilon, None)
+    bnd_fct = (None, None)
+
+    bnd = []
+
+    for i in range(L):
+        if i % 3 == 0:
+            bnd.append(bnd_fcn)
+        else:
+            bnd.append(bnd_fct)
+
+    opt = linprog(
+        c=obj,
+        A_ub=lhs_ineq,
+        b_ub=rhs_ineq,
+        A_eq=lhs_eq,
+        b_eq=rhs_eq,
+        bounds=bnd,
+        method="revised simplex",
+    )
+
+    if opt.success:
+        # print("fc found")
+        return opt.x
+    else:
+        # print("Task Metric does not Exist")
+        return np.zeros((L,))

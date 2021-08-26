@@ -7,7 +7,10 @@ import pandas as pd
 from class_stl import STL
 from class_grasp import Grasp
 from quality_metrics import fc_from_g
+from quality_metrics import fc_from_g_v2
 from math_tools import list_to_vertical_matrix
+
+np.set_printoptions(suppress=True)
 
 OBJ = ""
 GRSP = ""
@@ -36,8 +39,8 @@ data1[:, :] = ""
 row = 0
 skip = False
 for key_grasp, value_grasp in data_grasps.items():
-    obj = key_grasp.partition(" ")[0]
-    grsp = key_grasp.partition(" ")[2]
+    obj = key_grasp.partition("-")[0]
+    grsp = key_grasp.partition("-")[2]
     if OBJ != "":
         if OBJ != obj:
             skip = True
@@ -65,15 +68,17 @@ for key_grasp, value_grasp in data_grasps.items():
         skip2 = False
         col = 0
         for key_force, value_force in data_force.items():
-            obj_force = key_force.partition(" ")[0]
-            frc = key_force.partition(" ")[2]
+            obj_force = key_force.partition("-")[0]
+            frc = key_force.partition("-")[2]
             if FRC != "" and FRC != frc:
                 skip2 = True
 
             if not skip2 and obj == obj_force:
                 d_w_ext = value_force
-                fc_max, fc = fc_from_g(grasp, d_w_ext, end=END)
+                # fc_max, fc = fc_from_g(grasp, d_w_ext, end=100)
+                fc = fc_from_g_v2(grasp, d_w_ext)
                 fcn = fc[::3]
+                fc_max = max(fcn)
                 data[row, col] = fc_max
                 fcn_str = ""
                 for val in fcn:
@@ -83,7 +88,10 @@ for key_grasp, value_grasp in data_grasps.items():
                         fcn_str += str(val.round(3)) + "|"
                 data1[row, col] = fcn_str[: len(fcn_str) - 1]
                 if OBJ != "" or GRSP != "" or FRC != "":
-                    print(key_grasp, frc, fc_max, fcn)
+                    print("max: ", key_grasp, frc, round(fc_max, 3), fcn.round(3))
+
+                    fcn = fc[::3]
+                    print("min:", key_grasp, frc, fcn.round(3))
 
             skip2 = False
             col += 1
