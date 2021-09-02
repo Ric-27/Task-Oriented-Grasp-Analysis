@@ -1,6 +1,4 @@
-import numpy as np
-from class_jacobian import Jacobian
-from data_types import Finger, Joint, Contact
+from grasp import *
 
 xv = np.array([1, 0, 0]).reshape(3, 1)
 yv = np.array([0, 1, 0]).reshape(3, 1)

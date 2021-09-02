@@ -1,16 +1,53 @@
-# importing the module
-import ast
-import numpy as np
-import pandas as pd
-from openpyxl import load_workbook
+from grasp import *
 
-from class_stl import STL
-from class_grasp import Grasp
-from quality_metrics import friction_form_closure
-from math_tools import list_to_vertical_matrix, get_rank
+parser = argparse.ArgumentParser(
+    description="view or save the force analysis of each grasp of each object"
+)
+parser.add_argument(
+    "-o",
+    "--object",
+    type=str,
+    default="",
+    help="select an object [def: all]",
+)
+parser.add_argument(
+    "-g",
+    "--grasp",
+    type=str,
+    default="",
+    help="select a grasp of an object [def: all]",
+)
+parser.add_argument(
+    "-gf",
+    "--grasp_file",
+    type=str,
+    default="grasps",
+    help="name of grasp file [def: grasps]",
+)
 
-OBJ = ""
-GRSP = ""
+args = parser.parse_args()
+OBJ = args.object
+GRP = args.grasp
+
+assert not (
+    (GRP != "") and (OBJ == "")
+), "Can't specify a grasp without specifying and object"
+
+# reading the data from the file
+with open("./code/textfiles/" + args.grasp_file + ".txt") as f:
+    data_grasps = f.read()
+data_grasps = ast.literal_eval(data_grasps)
+
+print(parser.format_usage())
+print("Arguments Values", vars(args))
+print("\nPress [q] to exit, [s] to show current status\n")
+
+if OBJ != "" or GRP != "":
+    print("data wont be saved to Excel\n")
+    save = False
+else:
+    print("data will be saved to Excel")
+    save = True
 
 # reading the data from the file
 with open("./code/textfiles/grasps.txt") as f:
@@ -21,20 +58,28 @@ index = []
 data = []
 counter = 0
 
+prev_obj = ""
+worked = False
 skip = False
+
 for key_grasp, value_grasp in data_grasps.items():
     obj = key_grasp.partition("-")[0]
-    grsp = key_grasp.partition("-")[2]
+    grp = key_grasp.partition("-")[2]
     if OBJ != "":
         if OBJ != obj:
             skip = True
-        elif GRSP != "":
-            if GRSP != grsp:
+        elif GRP != "":
+            if GRP != grp:
                 skip = True
     if not skip:
         counter += 1
+        worked = True
         index.append(counter)
-        print("analysing... \t", key_grasp)
+        if save:
+            if prev_obj != obj:
+                prev_obj = obj
+                print("\nworking on... {}:".format(obj), end="", flush=True)
+            print("[{}]".format(grp), end="", flush=True)
         path = "./stl/" + obj + ".stl"
         contacts = np.array(value_grasp)
         mesh = STL(path)
@@ -60,9 +105,21 @@ for key_grasp, value_grasp in data_grasps.items():
                 "True" if d > 0 else "False",
             ]
         )
+        if not save:
+            print(
+                "grasp:{}, nc:{}, rank:{}, indeterminate:{}, graspable:{}, ffc:{}".format(
+                    key_grasp,
+                    grasp.nc,
+                    get_rank(grasp.Gt.transpose()),
+                    "True" if grasp.indeterminate else "False",
+                    "True" if grasp.graspable else "False",
+                    "True" if d > 0 else "False",
+                )
+            )
     skip = False
 
-if OBJ == "" and GRSP == "":
+if save:
+    print("\nsaving...", end="")
     columns = ["grasp_name", "nc", "rank", "indeterminate", "graspable", "FFC"]
     data = np.array(data)
     grasp_info = {}
@@ -78,4 +135,8 @@ if OBJ == "" and GRSP == "":
     df.to_excel(writer, sheet_name="raw grasp info", index=True, na_rep="-")
     writer.save()
 
-    print("saved grasp info onto excel as raw data")
+    print("saved")
+if worked:
+    print("\nFinished\n")
+else:
+    print("\nNo grasps were found\n")

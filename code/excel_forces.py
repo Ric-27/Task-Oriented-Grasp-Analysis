@@ -1,55 +1,119 @@
-# importing the module
-import ast
-from openpyxl import load_workbook
-import numpy as np
-import pandas as pd
+from grasp import *
 
-from class_stl import STL
-from class_grasp import Grasp
-from quality_metrics import fc_from_g
-from quality_metrics import fc_from_g_v2
-from math_tools import list_to_vertical_matrix
+parser = argparse.ArgumentParser(
+    description="view or save the force analysis of each grasp of each object"
+)
+parser.add_argument(
+    "-o",
+    "--object",
+    type=str,
+    default="",
+    help="select an object [def: all]",
+)
+parser.add_argument(
+    "-g",
+    "--grasp",
+    type=str,
+    default="",
+    help="select a grasp of an object [def: all]",
+)
+parser.add_argument(
+    "-f",
+    "--force",
+    type=str,
+    default="",
+    help="select a force to analyze [def: all]",
+)
+parser.add_argument(
+    "-gf",
+    "--grasp_file",
+    type=str,
+    default="grasps",
+    help="name of grasp file [def: grasps]",
+)
+parser.add_argument(
+    "-ff",
+    "--force_file",
+    type=str,
+    default="forces",
+    help="name of forces file [def: forces]",
+)
+parser.add_argument(
+    "-a",
+    "--alpha",
+    type=int,
+    default=1,
+    help="alpha to study [def: 1]",
+)
+parser.add_argument(
+    "-fc",
+    "--fc_max",
+    type=int,
+    default=100,
+    help="max possible fc [def: 100]",
+)
 
-np.set_printoptions(suppress=True)
+args = parser.parse_args()
+OBJ = args.object
+GRP = args.grasp
+FRC = args.force
+ALPHA = args.alpha
+END = args.fc_max
 
-OBJ = ""
-GRSP = ""
-FRC = ""
+assert not (
+    (GRP != "") and (OBJ == "")
+), "Can't specify a grasp without specifying and object"
 
 # reading the data from the file
-with open("./code/textfiles/grasps.txt") as f:
+with open("./code/textfiles/" + args.grasp_file + ".txt") as f:
     data_grasps = f.read()
 data_grasps = ast.literal_eval(data_grasps)
 
 # reading the data from the file
-with open("./code/textfiles/forces.txt") as f:
+with open("./code/textfiles/" + args.force_file + ".txt") as f:
     data_force = f.read()
 data_force = ast.literal_eval(data_force)
 
-skip = False
+print(parser.format_usage())
+print("Arguments Values", vars(args))
+print("\nPress [q] to exit, [s] to show current status\n")
 
-ALPHA = 1
-END = 100
+if OBJ != "" or GRP != "" or FRC != "":
+    print("data wont be saved to Excel\n")
+    save = False
+else:
+    print("data will be saved to Excel")
+    save = True
+
+start = time.time()
 index = []
-
+prev_obj = ""
+worked = False
+skip = False
 data = np.zeros((len(data_grasps), len(data_force)))
 data1 = np.chararray((len(data_grasps), len(data_force)), itemsize=80)
 data1[:, :] = ""
-
 row = 0
-skip = False
+end = time.time()
+# print("declaration time: ", end - start)
+
 for key_grasp, value_grasp in data_grasps.items():
     obj = key_grasp.partition("-")[0]
-    grsp = key_grasp.partition("-")[2]
+    grp = key_grasp.partition("-")[2]
+
     if OBJ != "":
         if OBJ != obj:
             skip = True
-        elif GRSP != "":
-            if GRSP != grsp:
+        elif GRP != "":
+            if GRP != grp:
                 skip = True
     if not skip:
         index.append(key_grasp)
-        print("analysing... \t", key_grasp)
+        if save:
+            if prev_obj != obj:
+                prev_obj = obj
+                print("\nworking on... {}:".format(obj), end="", flush=True)
+            print("[{}]".format(grp), end="", flush=True)
         path = "./stl/" + obj + ".stl"
         contacts = np.array(value_grasp)
         mesh = STL(path)
@@ -74,24 +138,39 @@ for key_grasp, value_grasp in data_grasps.items():
                 skip2 = True
 
             if not skip2 and obj == obj_force:
+                worked = True
                 d_w_ext = value_force
-                # fc_max, fc = fc_from_g(grasp, d_w_ext, end=100)
-                fc = fc_from_g_v2(grasp, d_w_ext)
-                fcn = fc[::3]
-                fc_max = max(fcn)
+                fc_max, fc = fc_from_g(grasp, d_w_ext, end=END)
                 data[row, col] = fc_max
-                fcn_str = ""
-                for val in fcn:
-                    if fc_max > END:
-                        fcn_str += "-|"
+                if fc_max == -2.5:
+                    exit("\nExecution Cancelled\n")
+                if fc_max == -3.5:
+                    print(
+                        "\ncurrent status:\n OBJ:{}, GRP:{}, FRC:{} \n".format(
+                            obj, grp, frc
+                        )
+                    )
+                    time.sleep(1)
+                    print("\nworking on... {}:".format(obj), end="", flush=True)
+                fc[::3]  # only normal forces
+                fc_str = ""
+                for i, val in enumerate(fc, 0):
+                    if i % 3 == 0:
+                        fc_str += ";"
                     else:
-                        fcn_str += str(val.round(3)) + "|"
-                data1[row, col] = fcn_str[: len(fcn_str) - 1]
-                if OBJ != "" or GRSP != "" or FRC != "":
-                    print("max: ", key_grasp, frc, round(fc_max, 3), fcn.round(3))
-
-                    fcn = fc[::3]
-                    print("min:", key_grasp, frc, fcn.round(3))
+                        fc_str += ","
+                    if fc_max < 0:
+                        fc_str += "-"
+                    else:
+                        fc_str += str(val.round(3))
+                fc_str = fc_str[1:]
+                data1[row, col] = fc_str
+                if not save:
+                    print(
+                        "OBJ:{}, GRP:{}, FRC:<{}>{}, fc vector:{}".format(
+                            obj, grp, frc, value_force, fc_str
+                        )
+                    )
 
             skip2 = False
             col += 1
@@ -99,7 +178,8 @@ for key_grasp, value_grasp in data_grasps.items():
     skip = False
     row += 1
 
-if OBJ == "" and GRSP == "" and FRC == "":
+if save:
+    print("\nsaving...", end="")
     columns = []
 
     for key_force in data_force.keys():
@@ -123,4 +203,8 @@ if OBJ == "" and GRSP == "" and FRC == "":
     df1.to_excel(writer, sheet_name="raw forces vec", index=True, na_rep="")
     writer.save()
 
-    print("saved forces onto excel as raw data")
+    print("saved")
+if worked:
+    print("\nFinished\n")
+else:
+    print("\nNo grasps were found\n")

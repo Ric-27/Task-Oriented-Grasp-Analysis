@@ -1,118 +1,120 @@
-# importing the modules
-import ast
-from openpyxl import load_workbook
-import numpy as np
-import pandas as pd
+from grasp import *
 
-from class_stl import STL
-from class_grasp import Grasp
-from quality_metrics import alpha_from_direction
-from math_tools import list_to_vertical_matrix
+parser = argparse.ArgumentParser(
+    description="view or save the alpha analysis of each grasp of each object"
+)
+parser.add_argument(
+    "-o",
+    "--object",
+    type=str,
+    default="",
+    help="select an object [def: all]",
+)
+parser.add_argument(
+    "-g",
+    "--grasp",
+    type=str,
+    default="",
+    help="select a grasp of an object [def: all]",
+)
+parser.add_argument(
+    "-gf",
+    "--grasp_file",
+    type=str,
+    default="grasps",
+    help="name of grasp file [def: grasps]",
+)
+parser.add_argument(
+    "-fmf",
+    "--fmax_file",
+    type=str,
+    default="fmax",
+    help="name of fmax file [def: fmax]",
+)
+parser.add_argument(
+    "-df",
+    "--dir_file",
+    type=str,
+    default="dir",
+    help="name of directions file [def: dir]",
+)
+parser.add_argument(
+    "-d",
+    "--dir",
+    type=str,
+    default="",
+    help="direction to study [def: all]",
+)
+parser.add_argument(
+    "-fm",
+    "--fmax",
+    type=int,
+    default=0,
+    help="direction to study [def: all]",
+)
 
-DIR_W_EXT = {
-    "X": [1, 0, 0, 0, 0, 0],
-    "-X": [-1, 0, 0, 0, 0, 0],
-    "Y": [0, 1, 0, 0, 0, 0],
-    "-Y": [0, -1, 0, 0, 0, 0],
-    "Z": [0, 0, 1, 0, 0, 0],
-    "-Z": [0, 0, -1, 0, 0, 0],
-    "X+Y+Z": [1, 1, 1, 0, 0, 0],
-    "-X+Y+Z": [-1, 1, 1, 0, 0, 0],
-    "-X-Y+Z": [-1, -1, 1, 0, 0, 0],
-    "X-Y+Z": [1, -1, 1, 0, 0, 0],
-    "X+Y-Z": [1, 1, -1, 0, 0, 0],
-    "-X+Y-Z": [-1, 1, -1, 0, 0, 0],
-    "-X-Y-Z": [-1, -1, -1, 0, 0, 0],
-    "X-Y-Z": [1, -1, -1, 0, 0, 0],
-    "mX": [0, 0, 0, 1, 0, 0],
-    "-mX": [0, 0, 0, -1, 0, 0],
-    "mY": [0, 0, 0, 0, 1, 0],
-    "-mY": [0, 0, 0, 0, -1, 0],
-    "mZ": [0, 0, 0, 0, 0, 1],
-    "-mZ": [0, 0, 0, 0, 0, -1],
-    "mX+mY+mZ": [0, 0, 0, 1, 1, 1],
-    "-mX+mY+mZ": [0, 0, 0, -1, 1, 1],
-    "-mX-mY+mZ": [0, 0, 0, -1, -1, 1],
-    "mX-mY+mZ": [0, 0, 0, 1, -1, 1],
-    "mX+mY-mZ": [0, 0, 0, 1, 1, -1],
-    "-mX+mY-mZ": [0, 0, 0, -1, 1, -1],
-    "-mX-mY-mZ": [0, 0, 0, -1, -1, -1],
-    "mX-mY-mZ": [0, 0, 0, 1, -1, -1],
-    "X+Y+Z+mX+mY+mZ": [1, 1, 1, 1, 1, 1],
-}
-"""
-"""
+args = parser.parse_args()
+OBJ = args.object
+GRP = args.grasp
+DIR = args.dir
+FMAX = args.fmax
 
-F_MAXS = [
-    0.1,
-    0.2,
-    0.3,
-    0.4,
-    0.5,
-    0.6,
-    0.7,
-    0.8,
-    0.9,
-    1,
-    1.1,
-    1.2,
-    1.3,
-    1.4,
-    1.5,
-    1.6,
-    1.7,
-    1.8,
-    1.9,
-    2,
-    2.2,
-    2.4,
-    2.6,
-    2.8,
-    3,
-    3.2,
-    3.4,
-    3.6,
-    3.8,
-    4,
-    4.2,
-    4.4,
-    4.6,
-    4.8,
-    5,
-    5.5,
-    6,
-    6.5,
-    7,
-    7.5,
-    8,
-]
-"""
-"""
+assert not (
+    (GRP != "") and (OBJ == "")
+), "Can't specify a grasp without specifying and object"
 
-OBJ = ""
-GRSP = ""
+assert FMAX >= 0, "fmax must be positive"
 
 # reading the data from the file
-with open("./code/textfiles/grasps.txt") as f:
+with open("./code/textfiles/" + args.grasp_file + ".txt") as f:
     data_grasps = f.read()
 data_grasps = ast.literal_eval(data_grasps)
+
+# reading the data from the file
+with open("./code/textfiles/" + args.fmax_file + ".txt") as f:
+    F_MAXS = f.read()
+F_MAXS = ast.literal_eval(F_MAXS)
+
+# reading the data from the file
+with open("./code/textfiles/" + args.dir_file + ".txt") as f:
+    DIR_W_EXT = f.read()
+DIR_W_EXT = ast.literal_eval(DIR_W_EXT)
+
+
+print(parser.format_usage())
+print("Arguments Values", vars(args))
+print("\nPress [q] to exit, [s] to show current status\n")
+
+if OBJ != "" or GRP != "" or DIR != "" or FMAX != 0:
+    print("data wont be saved to Excel\n")
+    save = False
+else:
+    print("data will be saved to Excel")
+    save = True
 
 index = []
 data = []
 
+prev_obj = ""
+worked = False
 skip = False
+
 for key_grasp, value_grasp in data_grasps.items():
     obj = key_grasp.partition("-")[0]
-    grsp = key_grasp.partition("-")[2]
+    grp = key_grasp.partition("-")[2]
     if OBJ != "":
         if OBJ != obj:
             skip = True
-        elif GRSP != "":
-            if GRSP != grsp:
+        elif GRP != "":
+            if GRP != grp:
                 skip = True
     if not skip:
         index.append(key_grasp)
-        print("analysing... \t", key_grasp)
+        if save:
+            if prev_obj != obj:
+                prev_obj = obj
+                print("\nworking on... {}:".format(obj), end="", flush=True)
+            print("[{}]".format(grp), end="", flush=True)
         path = "./stl/" + obj + ".stl"
         contacts = np.array(value_grasp)
         mesh = STL(path)
@@ -129,20 +131,42 @@ for key_grasp, value_grasp in data_grasps.items():
         grasp = Grasp(mesh.cog, contact_points)
         data_obj = []
         for f_max in F_MAXS:
-            for d_w_ext in DIR_W_EXT.values():
-                data_obj.append(
-                    alpha_from_direction(grasp, d_w_ext, f_max)[0]
-                )  # if alpha > 0 else 0)
-            # data_obj.append("")
+            if FMAX != 0:
+                f_max = FMAX
+            skip2 = False
+            for key_dir, d_w_ext in DIR_W_EXT.items():
+                if DIR != "" and DIR != key_dir:
+                    skip2 = True
+
+                if not skip2:
+                    worked = True
+                    alpha = round(alpha_from_direction(grasp, d_w_ext, f_max)[0], 3)
+                    data_obj.append(alpha)
+                    if keyboard.is_pressed("q"):
+                        exit("\nExecution Cancelled\n")
+                    if keyboard.is_pressed("s"):
+                        print(
+                            "\ncurrent status:\n OBJ:{}, GRP:{}, FMAX:{}, DIR:{}, ALPHA:{} \n".format(
+                                obj, grp, f_max, key_dir, alpha
+                            )
+                        )
+                        time.sleep(1)
+                        print("\nworking on... {}:".format(obj), end="", flush=True)
+                    if not save:
+                        print(
+                            "OBJ:{}, GRP:{}, FMAX:{}, DIR:{}, ALPHA:{}".format(
+                                obj, grp, f_max, key_dir, alpha
+                            )
+                        )
+            if FMAX != 0:
+                break
 
         data_obj = np.array(data_obj).flatten()
         data.append(data_obj)
     skip = False
 
-    if OBJ == key_grasp:
-        break
-
-if OBJ == "" and GRSP == "":
+if save and worked:
+    print("saving...", end="")
     columns = []
     for f_max in F_MAXS:
         for key_dir in DIR_W_EXT.keys():
@@ -174,4 +198,8 @@ if OBJ == "" and GRSP == "":
     df1.to_excel(writer, sheet_name="raw alpha mod", index=True, na_rep="-")
     writer.save()
 
-    print("saved alpha onto excel as raw data")
+    print("\nsaved")
+if worked:
+    print("\nFinished\n")
+else:
+    print("No grasps, directions and/or fmax were found\n")

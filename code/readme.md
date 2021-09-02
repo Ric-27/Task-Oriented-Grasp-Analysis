@@ -26,6 +26,8 @@ This project needs the following python libraries to work:
 - pandas (only to save to excel)
 - openpyxl (only to save to excel)
 - ast (only to save to excel)
+- argparse
+- keyboard
 
 The other requirements should be already on your system as they normally come with Python.
 

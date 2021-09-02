@@ -1,14 +1,8 @@
-import numpy as np
-from class_jacobian import Jacobian
-from data_types import Finger, Joint, Contact
-from class_grasp import Grasp
-import math
+from grasp import *
 
 zv = np.array([0, 0, 1]).reshape(3, 1)
 
 p = np.array([0, 0, 0])
-
-mu = 0.3
 
 l = 2
 
@@ -51,9 +45,10 @@ C = np.array([contact1, contact2, contact3])
 
 grasp = Grasp(p, C)
 
-# Gt = grasp.get_grasp_matrix_t()
-# print("Gt shape:", Gt.shape)
-# print("Gt:\n", Gt)
+Gt = grasp.Gt
+print("Gt shape:", Gt.shape)
+print("Gt:\n", Gt)
+grasp.get_classification(True)
 
 q1 = Joint(1, q1c, zv, c1)
 q2 = Joint(2, q2c, zv, c2)
@@ -69,6 +64,5 @@ J = jacobian.J
 print("J shape:", J.shape)
 print("J:\n", J)
 
-# grasp.GraspClassification(True)
 jacobian.get_classification(True)
 jacobian.get_hand_architecture()

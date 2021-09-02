@@ -1,27 +1,83 @@
-import ast
-from math_tools import list_to_vertical_matrix
-from quality_metrics import alpha_from_direction, fcn_from_g
-import numpy as np
-from class_stl import STL
-from class_grasp import Grasp
+from typing import OrderedDict
+from grasp import *
 
-with open("./code/textfiles/grasps.txt") as f:
-    objects_grasps_definition = f.read()
-objects_grasps_definition = ast.literal_eval(objects_grasps_definition)
+parser = argparse.ArgumentParser(
+    description="view the grasps saved on the predetermined file"
+)
+parser.add_argument(
+    "-o",
+    "--object",
+    type=str,
+    default="petri",
+    help="select an object [def: petri]",
+)
+parser.add_argument(
+    "-g",
+    "--grasp",
+    type=str,
+    default="c12",
+    help="select a grasp of an object [def: c12]",
+)
+parser.add_argument(
+    "-gf",
+    "--grasp_file",
+    type=str,
+    default="grasps",
+    help="name of grasp file [def: grasps]",
+)
+parser.add_argument(
+    "-df",
+    "--dir_file",
+    type=str,
+    default="dir",
+    help="name of directions file [def: dir]",
+)
+parser.add_argument(
+    "-d",
+    "--dir",
+    type=str,
+    default="X",
+    help="direction of study [def: X]",
+)
+parser.add_argument(
+    "-fc",
+    "--fc_max",
+    type=int,
+    default=1,
+    help="fc max value to study [def: 1]",
+)
+parser.add_argument(
+    "-a",
+    "--alpha",
+    type=int,
+    default=1,
+    help="alpha to study [def: 1]",
+)
+args = parser.parse_args()
+OBJ = args.object
+GRP = args.grasp
+assert not ((GRP == "") or (OBJ == "")), "Can't leave grasp or object empty"
+
+with open("./code/textfiles/" + args.grasp_file + ".txt") as f:
+    data_grasps = f.read()
+data_grasps = ast.literal_eval(data_grasps)
+
+with open("./code/textfiles/" + args.dir_file + ".txt") as f:
+    data_dir = f.read()
+data_dir = ast.literal_eval(data_dir)
 
 DECIMAL_PLACES = 3
 
-D_EXT = np.array([0, 0, -1, 0, 0, 0])
-FC_MAX = 0.2
-ALPHA = 0.141
-obj = "petri"
-grsp = "c6"
+D_EXT = data_dir[args.dir]
+FC_MAX = args.fc_max
+ALPHA = args.alpha
 
-key_g = obj + "_" + grsp
-coord = objects_grasps_definition[key_g].copy()
-path = "./stl/" + coord.pop(0) + ".stl"
-var = np.array(coord)  # .reshape((int(len(coord) / 4), 4))
-mesh = STL(path)
+var = data_grasps[OBJ + "-" + GRP]
+mesh = STL("./stl/" + OBJ + ".stl")
+
+print(parser.format_usage())
+print("Arguments Values", vars(args), "\n")
+
 contact_points = []
 for pt in var:
     contact_points.append(
@@ -32,14 +88,13 @@ for pt in var:
     )
 
 contact_points = list_to_vertical_matrix(contact_points)
-print(type(contact_points[0]))
 grasp = Grasp(mesh.cog, contact_points)
-al, forces = alpha_from_direction(grasp, D_EXT, FC_MAX, 8, 0.3)
+al, forces = alpha_from_direction(grasp, D_EXT, FC_MAX)
 print(
     "alpha: {}, Forces: {}".format(
         round(al, DECIMAL_PLACES), forces[0::3].round(DECIMAL_PLACES)
     )
 )
 print(30 * "-")
-forces = fcn_from_g(grasp, ALPHA * D_EXT, FC_MAX, 8, 0.3)
-print("Forces: {}".format(forces[0::3].round(DECIMAL_PLACES)))
+forces = fc_from_g(grasp, ALPHA * D_EXT, FC_MAX, 8, 0.3)[1]
+print("Forces: {}".format(forces[::3].round(DECIMAL_PLACES)))

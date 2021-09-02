@@ -1,11 +1,6 @@
-from matplotlib.pyplot import axis
-from class_stl import STL
-from class_grasp import Grasp
-from data_types import Contact
-import numpy as np
-import time
+from grasp import *
 
-path = "../stl/cube_low.stl"
+path = "./stl/cube_low.stl"
 NC = 8
 
 start = time.time()
