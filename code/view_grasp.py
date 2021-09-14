@@ -82,6 +82,7 @@ for key_grasp, value_grasp in data_grasps.items():
         contact_points = list_to_vertical_matrix(contact_points)
         if args.mesh_range:
             if prev_obj != obj:
+                print("cog location: ", mesh.cog)
                 print(
                     "{} \n range of model: \t X: {:.3f} - {:.3f} \t Y: {:.3f} - {:.3f} \t Z: {:.3f} - {:.3f}".format(
                         obj,

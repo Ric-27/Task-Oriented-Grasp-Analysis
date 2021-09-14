@@ -31,6 +31,7 @@ for object in stls:
                 max(mesh.vertices[:, 2]),
             )
         )
+        print(" cog location: ", mesh.cog)
     else:
         print(object.partition(".")[0])
 

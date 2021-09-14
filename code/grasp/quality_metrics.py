@@ -272,11 +272,12 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
     F = grasp.F
     lF = np.shape(F)[0]
 
-    obj = -1 * np.ones((L, 1))  # for max
+    obj = np.zeros((L, 1))
+    # obj = -1 * np.ones((L, 1))  # negative for max, positive for min
     for i in range(L):
         if i % 3 == 0:
-            pass
-            # obj[i] = -1 #for only fcn
+            # pass
+            obj[i] = 1  # for only fcn
 
     lhs_ineq = -F  # F*fc <= 0 (F*fc > 0)
     rhs_ineq = -sys.float_info.epsilon * np.ones((1, lF)).flatten()
@@ -287,7 +288,6 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
     finished = False
     fc_max = start
     while not finished:
-        # bnd_fcn = (sys.float_info.epsilon, fc_max) for max
         bnd_fcn = (0, fc_max)
         bnd_fct = (None, None)
 
@@ -323,3 +323,73 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
     else:
         # print("Task Metric does not Exist")
         return -1.1, np.zeros((L,))
+
+
+def fc_from_g_v2(grasp, g, FMAXS):
+    G = grasp.Gt.transpose()
+    L = grasp.l
+    if get_rank(G) != 6:
+        # print("ERROR: rank of G is not equal to 6")
+        # print("Cant Calculate Fc")
+        return -1, np.zeros((L,))
+    if not grasp.graspable:
+        # print("ERROR: G is not Graspable")
+        # print("Fc cant be found")
+        return -1, np.zeros((L,))
+    not_hf = False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            not_hf = True
+            break
+    if not_hf:
+        print(
+            "ERROR: Original definition of contact models is not Hard Finger for all contacts"
+        )
+        return -1, np.zeros((L,))
+    F = grasp.F
+    lF = np.shape(F)[0]
+    g = np.array(g).flatten()
+    obj = np.zeros((L + 1, 1))
+    obj[0] = -1
+
+    lhs_ineq = np.block([[np.zeros((lF, 1)), -F], [np.ones((L, 1)), -1 * np.eye(L)]])
+    # F*fc <= 0 (F*fc > 0)
+    rhs_ineq = np.zeros((lF + L,))
+    lhs_eq = np.concatenate(
+        (np.zeros((6, 1)), G), axis=1
+    )  # G*fc = -g (G*fc + alpha*dext = 0)
+    rhs_eq = -g
+
+    for fmax in FMAXS:
+        bnd = []
+        bnd.append((None, None))
+        bnd_fcn = (0, fmax)
+        bnd_fct = (None, None)
+
+        for i in range(L):
+            if i % 3 == 0:
+                bnd.append(bnd_fcn)
+            else:
+                bnd.append(bnd_fct)
+
+        opt = linprog(
+            c=obj,
+            A_ub=lhs_ineq,
+            b_ub=rhs_ineq,
+            A_eq=lhs_eq,
+            b_eq=rhs_eq,
+            bounds=bnd,
+            method="revised simplex",
+        )
+
+        if opt.success:
+            # print("fc found", fmax)
+            # print("z", opt.fun)
+            return fmax, opt.x[1:]
+        if keyboard.is_pressed("Q"):
+            return -2.5, np.zeros((L,))
+        if keyboard.is_pressed("S"):
+            return -3.5, np.zeros((L,))
+
+    # print("Task Metric does not Exist")
+    return -10, np.zeros((L,))

@@ -52,6 +52,13 @@ parser.add_argument(
     default=100,
     help="max possible fc [def: 100]",
 )
+parser.add_argument(
+    "-fmf",
+    "--fmax_file",
+    type=str,
+    default="fmax",
+    help="name of fmax file [def: fmax]",
+)
 
 args = parser.parse_args()
 OBJ = args.object
@@ -73,6 +80,11 @@ data_grasps = ast.literal_eval(data_grasps)
 with open("./code/textfiles/" + args.force_file + ".txt") as f:
     data_force = f.read()
 data_force = ast.literal_eval(data_force)
+
+# reading the data from the file
+with open("./code/textfiles/" + args.fmax_file + ".txt") as f:
+    F_MAXS = f.read()
+F_MAXS = ast.literal_eval(F_MAXS)
 
 print(parser.format_usage())
 print("Arguments Values", vars(args))
@@ -140,7 +152,7 @@ for key_grasp, value_grasp in data_grasps.items():
             if not skip2 and obj == obj_force:
                 worked = True
                 d_w_ext = value_force
-                fc_max, fc = fc_from_g(grasp, d_w_ext, end=END)
+                fc_max, fc = fc_from_g_v2(grasp, d_w_ext, F_MAXS)
                 data[row, col] = fc_max
                 if fc_max == -2.5:
                     exit("\nExecution Cancelled\n")
@@ -152,7 +164,7 @@ for key_grasp, value_grasp in data_grasps.items():
                     )
                     time.sleep(1)
                     print("\nworking on... {}:".format(obj), end="", flush=True)
-                fc[::3]  # only normal forces
+                # fc = fc[::3]  # only normal forces
                 fc_str = ""
                 for i, val in enumerate(fc, 0):
                     if i % 3 == 0:

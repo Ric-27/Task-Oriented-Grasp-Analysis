@@ -5,6 +5,7 @@ import random
 import math
 import time
 import warnings
+import re
 
 
 # download required
@@ -24,4 +25,4 @@ from stl import mesh  # the real name is numpy-stl
 
 # config
 np.set_printoptions(suppress=True)
-warnings.filterwarnings('ignore')
+warnings.filterwarnings("ignore")
