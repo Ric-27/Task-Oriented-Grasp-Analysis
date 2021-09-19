@@ -1,5 +1,11 @@
-from req import *
-from math_tools import *
+import numpy as np
+from .functions import (
+    block_diag,
+    get_S,
+    list_to_vertical_matrix,
+    null_space,
+    get_H_and_l,
+)
 
 np.set_printoptions(suppress=True)
 
@@ -35,11 +41,7 @@ class Grasp:
         self.F = block_diag(fi)
 
     def updt_H(self):
-        hi = []
-        for contact in self.contact_points:
-            hi.append(contact.h)
-            self.l += contact.l
-        self.H = block_diag(hi)
+        self.H, self.l = get_H_and_l(self.contact_points)
 
     def get_Gt(self):
         self.updt_Gt()

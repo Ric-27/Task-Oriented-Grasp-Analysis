@@ -1,4 +1,7 @@
-from grasp import *
+from grasp import class_grasp as Grasp
+import os
+import argparse
+import yaml
 
 parser = argparse.ArgumentParser(
     description="view or save the force analysis of each grasp of each object"
@@ -17,13 +20,6 @@ parser.add_argument(
     default="",
     help="select a grasp of an object [def: all]",
 )
-parser.add_argument(
-    "-gf",
-    "--grasp_file",
-    type=str,
-    default="grasps",
-    help="name of grasp file [def: grasps]",
-)
 
 args = parser.parse_args()
 OBJ = args.object
@@ -34,9 +30,12 @@ assert not (
 ), "Can't specify a grasp without specifying and object"
 
 # reading the data from the file
-with open("./code/textfiles/" + args.grasp_file + ".txt") as f:
-    data_grasps = f.read()
-data_grasps = ast.literal_eval(data_grasps)
+with open(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "textfiles/grasps.yaml")
+) as f:
+    data_grasps = yaml.load(f)
+
+print(data_grasps)
 
 print(parser.format_usage())
 print("Arguments Values", vars(args))
@@ -48,11 +47,6 @@ if OBJ != "" or GRP != "":
 else:
     print("data will be saved to Excel")
     save = True
-
-# reading the data from the file
-with open("./code/textfiles/grasps.txt") as f:
-    data_grasps = f.read()
-data_grasps = ast.literal_eval(data_grasps)
 
 index = []
 data = []

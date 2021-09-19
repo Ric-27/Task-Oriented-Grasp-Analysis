@@ -1,4 +1,6 @@
-from req import *
+import numpy as np
+import math
+import sys
 
 
 class Joint:

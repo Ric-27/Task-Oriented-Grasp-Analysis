@@ -22,7 +22,3 @@ import pandas as pd
 from scipy.optimize import linprog
 from scipy.linalg import null_space
 from stl import mesh  # the real name is numpy-stl
-
-# config
-np.set_printoptions(suppress=True)
-warnings.filterwarnings("ignore")
