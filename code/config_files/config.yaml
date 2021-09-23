@@ -1,0 +1,4 @@
+object yaml file name: objects
+raw forces txt file name: raw_forces
+f max: '0.1:2:0.1,2:10:0.2,10:20,20:100:10' #start:stop:step [start,stop) if step == None -> step = 1
+dWext: 'X,-X,10:20,20:100:10'

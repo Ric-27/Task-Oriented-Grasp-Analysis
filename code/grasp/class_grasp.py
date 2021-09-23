@@ -1,9 +1,9 @@
 import numpy as np
-from .functions import (
+from scipy.linalg import null_space
+from grasp_functions import (
     block_diag,
     get_S,
     list_to_vertical_matrix,
-    null_space,
     get_H_and_l,
 )
 

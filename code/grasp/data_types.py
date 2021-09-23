@@ -1,6 +1,7 @@
 import numpy as np
 import math
 import sys
+from typing import List
 
 
 class Joint:
@@ -31,11 +32,11 @@ class Finger:
 class Contact:
     def __init__(
         self,
-        location,
-        rotation_matrix,
-        tangential_f_coef=0.3,
-        torsional_f_coef=0,
-        number_cone_faces=8,
+        location: List,
+        rotation_matrix: np.array,
+        tangential_f_coef: float = 0.3,
+        torsional_f_coef: float = 0,
+        number_cone_faces: int = 8,
     ):
         assert (
             tangential_f_coef >= 0

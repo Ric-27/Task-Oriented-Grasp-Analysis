@@ -1,8 +1,13 @@
-from req import *
+import sys, os
+import numpy as np
+from scipy.optimize import linprog
+import keyboard
+from typing import List
 
-from math_tools import *
-from class_jacobian import *
-from class_grasp import *
+sys.path.append(os.path.dirname(__file__))
+from grasp_functions import get_rank
+from class_jacobian import Jacobian
+from class_grasp import Grasp
 
 
 def friction_form_closure(grasp):
@@ -242,7 +247,7 @@ def alpha_from_direction(grasp, d_ext, fc_max=10):
         return np.zeros((L + 1,))
 
 
-def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
+def fc_from_g_dep(grasp, g, start=0.1, end=100, step=0.1):
     G = grasp.Gt.transpose()
     L = grasp.l
     assert (
@@ -325,7 +330,7 @@ def fc_from_g(grasp, g, start=0.1, end=100, step=0.1):
         return -1.1, np.zeros((L,))
 
 
-def fc_from_g_v2(grasp, g, FMAXS):
+def forces_from_perturbation(grasp: Grasp, perturbation: List) -> List:
     G = grasp.Gt.transpose()
     L = grasp.l
     if get_rank(G) != 6:

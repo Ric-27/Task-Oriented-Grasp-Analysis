@@ -1,4 +1,9 @@
-from grasp import *
+import sys, os
+import numpy as np
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from data_types import Contact, Joint, Finger
+from class_jacobian import Jacobian
 
 xv = np.array([1, 0, 0]).reshape(3, 1)
 yv = np.array([0, 1, 0]).reshape(3, 1)

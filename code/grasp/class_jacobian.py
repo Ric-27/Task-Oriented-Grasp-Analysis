@@ -1,6 +1,13 @@
-from req import *
-from data_types import *
-from math_tools import *
+import numpy as np
+from data_types import Contact, Finger
+from scipy.linalg import null_space
+from grasp_functions import (
+    get_H_and_l,
+    get_S,
+    check_equal_vectors,
+    block_diag,
+    list_to_vertical_matrix,
+)
 
 np.set_printoptions(suppress=True)
 
@@ -30,11 +37,7 @@ class Jacobian:
         self.updt_classification()
 
     def updt_H(self):
-        hi = []
-        for contact in self.contact_points:
-            hi.append(contact.h)
-            self.L += contact.l
-        self.H = block_diag(hi)
+        self.H, self.l = get_H_and_l(self.contact_points)
 
     def get_J(self):
         self.upt_J()

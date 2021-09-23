@@ -1,31 +1,28 @@
-from grasp import *
+import sys, os
 
-path = "./stl/cube_low.stl"
-NC = 8
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+from class_stl import STL
 
-start = time.time()
-mesh = STL(path)
-end = time.time()
-print("declaration time: ", end - start)
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+from functions import path_join_str, path_starting_from_code
+
+path = path_join_str(path_starting_from_code(1), "stl/cube_low.stl")
+
+mesh = STL(path, [0, 0, 0])
 
 mesh.view()
 
-start = time.time()
-Ct, Ce, Cv = mesh.gen_C_randomly(NC)
-end = time.time()
-print("generation time: ", end - start)
+C = mesh.gen_C_randomly(1)
 
-C = np.concatenate((Ct, Ce, Cv), axis=0)
 mesh.view(C)
 
-C1 = mesh.gen_C_from_coordinates(np.array([5, 0, 0]), "E")
-C2 = mesh.gen_C_from_coordinates(np.array([0, 5, 0]), "E")
-C3 = mesh.gen_C_from_coordinates(np.array([0, 0, 5]), "E")
-C4 = mesh.gen_C_from_coordinates(np.array([-5, 0, 0]), "E")
-C5 = mesh.gen_C_from_coordinates(np.array([0, -5, 0]), "E")
-C6 = mesh.gen_C_from_coordinates(np.array([0, 0, -5]), "E")
-C7 = mesh.gen_C_from_coordinates(np.array([5, 5, 5]), "V", 0.3, 0.5, 10)
+C1 = mesh.contact_from_point([5, 1, 1])
+C2 = mesh.contact_from_point([0, 5, 0])
+C3 = mesh.contact_from_point([0, 0, 5])
+C4 = mesh.contact_from_point([-5, 0, 0])
+C5 = mesh.contact_from_point([0, -5, 0])
+C6 = mesh.contact_from_point([0, 0, -5])
+C7 = mesh.contact_from_point([5, 5, 5], 0.3, 0, 4)
 print(C7)
-C = np.concatenate((C1, C2, C3, C4, C5, C6, C7), axis=0)
-mesh.view(C)
-print("mesh center:", mesh.cog)
+mesh.view([C1, C2, C3, C4, C5, C6, C7])
+print("center of mass:", mesh.com)
