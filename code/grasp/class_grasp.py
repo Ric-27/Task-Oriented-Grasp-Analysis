@@ -1,10 +1,11 @@
+import os
 import numpy as np
-from scipy.linalg import null_space
 from grasp_functions import (
     block_diag,
     get_S,
     list_to_vertical_matrix,
     get_H_and_l,
+    is_nullspace_trivial,
 )
 
 np.set_printoptions(suppress=True)
@@ -83,42 +84,19 @@ class Grasp:
         self.Gt = np.dot(self.H, pGt)
 
     def updt_classification(self):
-        graspable = True
-        indeterminate = True
         Gt = self.get_Gt()
         G = Gt.transpose()
+        self.graspable = not is_nullspace_trivial(G)
+        self.indeterminate = not is_nullspace_trivial(Gt)
 
-        ns_Gt = null_space(Gt).round(2)
-        if ns_Gt.size > 0 and ns_Gt.any() != 0:
-            ns_Gt *= np.sign(ns_Gt[0, 0])
-            ns_Gt1d = ns_Gt.flatten()
-            Zero = True
-            for elem in ns_Gt1d:
-                if elem != 0:
-                    Zero = False
-                    break
-            if Zero:
-                indeterminate = False
-            else:
-                indeterminate = True
-        else:
-            indeterminate = False
 
-        ns_G = null_space(G).round(2)
-        if ns_G.size > 0 and ns_G.any() != 0:
-            ns_G *= np.sign(ns_G[0, 0])
-            ns_G1d = ns_G.flatten()
-            Zero = True
-            for elem in ns_G1d:
-                if elem != 0:
-                    Zero = False
-                    break
-            if Zero:
-                graspable = False
-            else:
-                graspable = True
-        else:
-            graspable = False
+def main():
+    val = (
+        __file__.replace(os.path.dirname(__file__), "")[1:]
+        + " is meant to be imported not executed"
+    )
+    print(f"\033[91m {val}\033[00m")
 
-        self.indeterminate = indeterminate
-        self.graspable = graspable
+
+if __name__ == "__main__":
+    main()

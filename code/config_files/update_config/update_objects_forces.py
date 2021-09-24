@@ -20,7 +20,7 @@ for key, item in tqdm(
     unit="force",
     colour="red",
     leave=True,
-    desc="Updating Force Definitions of" + object_file_name() + ".yaml",
+    desc="Updating Force Definitions of " + object_file_name() + ".yaml",
 ):
     obj = key.partition("-")[0]
     frc = key.partition("-")[2]

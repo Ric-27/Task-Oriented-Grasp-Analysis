@@ -1,12 +1,13 @@
+import os
 import numpy as np
 from data_types import Contact, Finger
-from scipy.linalg import null_space
 from grasp_functions import (
     get_H_and_l,
     get_S,
     check_equal_vectors,
     block_diag,
     list_to_vertical_matrix,
+    is_nullspace_trivial,
 )
 
 np.set_printoptions(suppress=True)
@@ -114,44 +115,10 @@ class Jacobian:
         self.J = np.dot(self.H, pJ)
 
     def updt_classification(self):
-        defective = True
-        redundant = True
         J = self.get_J()
         Jt = J.transpose()
-        ns_Jt = null_space(Jt).round(2)
-        if ns_Jt.size > 0 and ns_Jt.any() != 0:
-            ns_Jt *= np.sign(ns_Jt[0, 0])
-            ns_Jt1d = ns_Jt.flatten()
-            Zero = True
-            for elem in ns_Jt1d:
-                if elem != 0:
-                    Zero = False
-                    break
-            if Zero:
-                defective = False
-            else:
-                defective = True
-        else:
-            defective = False
-
-        ns_J = null_space(J).round(2)
-
-        if ns_J.size > 0 and ns_J.any() != 0:
-            ns_J *= np.sign(ns_J[0, 0])
-            ns_J1d = ns_J.flatten()
-            Zero = True
-            for elem in ns_J1d:
-                if elem != 0:
-                    Zero = False
-                    break
-            if Zero:
-                redundant = False
-            else:
-                redundant = True
-        else:
-            redundant = False
-        self.defective = defective
-        self.redundant = redundant
+        self.defective = not is_nullspace_trivial(Jt)
+        self.redundant = not is_nullspace_trivial(J)
 
     def get_hand_architecture(self):
         print("-" * 25)
@@ -203,3 +170,15 @@ class Jacobian:
                     )
                 )
         print("-" * 25)
+
+
+def main():
+    val = (
+        __file__.replace(os.path.dirname(__file__), "")[1:]
+        + " is meant to be imported not executed"
+    )
+    print(f"\033[91m {val}\033[00m")
+
+
+if __name__ == "__main__":
+    main()

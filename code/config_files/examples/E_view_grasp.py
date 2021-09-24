@@ -6,12 +6,13 @@ import keyboard
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from grasp.class_stl import STL
 from grasp.class_grasp import Grasp
-from grasp.functions import (
-    list_to_vertical_matrix,
+from grasp.grasp_functions import list_to_vertical_matrix
+from functions import (
     check_TARGET_OBJ_GRP,
     get_grasp_dict,
     is_TARGET_OBJ_GRP,
     get_STLs_dict,
+    point_dict_to_Contact,
 )
 
 parser = argparse.ArgumentParser(
@@ -39,26 +40,18 @@ GRP = args.grasp
 check_TARGET_OBJ_GRP(OBJ, GRP)
 
 grasps = get_grasp_dict()
-stls = get_STLs_dict()
+stl_path = get_STLs_dict()
 
 print("\nPress [q] to continue or [z + q] to exit\n")
 
 worked = False
 
-for obj, ograsps in grasps.items():
-    for grp in ograsps:
+for obj, v_grasps in grasps.items():
+    for grp, v_points in v_grasps.items():
         if is_TARGET_OBJ_GRP:
             worked = True
-            mesh = STL(stl_path_dict_item_to_STL(stl_path[obj]))
-            contact_points = []
-            for pt in contacts:
-                contact_points.append(
-                    mesh.gen_C_from_coordinates(
-                        np.array([pt[0], pt[1], pt[2]], dtype=np.float64),
-                        pt[3].upper(),
-                    )
-                )
-            contact_points = list_to_vertical_matrix(contact_points)
+            mesh = stl_path[obj]
+            contact_points = [point_dict_to_Contact(pt) for pt in v_points.values()]
             if args.mesh_range:
                 if prev_obj != obj:
                     print("cog location: ", mesh.cog)
@@ -73,7 +66,7 @@ for obj, ograsps in grasps.items():
                             max(mesh.vertices[:, 2]),
                         )
                     )
-            print("{} \t nc: {}".format(key_grasp, contacts.shape[0]))
+            print("{} \t nc: {}".format(obj + "-" + grp, len(contact_points)))
 
             if args.grasp_info:
                 grasp = Grasp(mesh.cog, contact_points)

@@ -510,3 +510,15 @@ class STL:
                 else "edge",
             )
         )
+
+
+def main():
+    val = (
+        __file__.replace(os.path.dirname(__file__), "")[1:]
+        + " is meant to be imported not executed"
+    )
+    print(f"\033[91m {val}\033[00m")
+
+
+if __name__ == "__main__":
+    main()

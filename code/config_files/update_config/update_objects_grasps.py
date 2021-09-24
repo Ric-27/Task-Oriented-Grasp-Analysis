@@ -13,7 +13,7 @@ for obj, mesh in tqdm(
     unit="obj",
     colour="red",
     leave=True,
-    desc="Updating Force Definitions of" + object_file_name() + ".yaml",
+    desc="Updating Grasp Definitions of " + object_file_name() + ".yaml",
 ):
     for grp, pts in objects[obj]["grasps"].items():
         new_pts = {}

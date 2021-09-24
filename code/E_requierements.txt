@@ -1,11 +1,9 @@
 argparse
 keyboard
 matplotlib
-mpl_toolkits
 numpy
 scipy
 numpy-stl
 openpyxl
 pandas
 pyyaml
-ast

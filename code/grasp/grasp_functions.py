@@ -1,6 +1,7 @@
 import os, sys
 import numpy as np
 from numpy.linalg import matrix_rank
+from scipy.linalg import null_space
 from typing import List
 
 sys.path.append(os.path.dirname(__file__))
@@ -69,3 +70,26 @@ def get_H_and_l(contact_points: List[Contact]):
         hi.append(contact.h)
         l += contact.l
     return block_diag(hi), l
+
+
+def is_nullspace_trivial(matrix: np.ndarray) -> bool:
+    ns_m = null_space(matrix).round(2)
+    if ns_m.size > 0 and ns_m.any() != 0:
+        ns_m *= np.sign(ns_m[0, 0])
+        ns_m1d = ns_m.flatten()
+        for elem in ns_m1d:
+            if elem != 0:
+                return False
+    return True
+
+
+def main():
+    val = (
+        __file__.replace(os.path.dirname(__file__), "")[1:]
+        + " is meant to be imported not executed"
+    )
+    print(f"\033[91m {val}\033[00m")
+
+
+if __name__ == "__main__":
+    main()

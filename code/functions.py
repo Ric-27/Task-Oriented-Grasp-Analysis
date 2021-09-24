@@ -161,7 +161,39 @@ def get_fmax_list() -> List:
 
 
 def get_dwext_dict() -> Dict:
+    dext_ref = {
+        "X": np.array([1, 0, 0, 0, 0, 0]),
+        "Y": np.array([0, 1, 0, 0, 0, 0]),
+        "Z": np.array([0, 0, 1, 0, 0, 0]),
+        "MX": np.array([0, 0, 0, 1, 0, 0]),
+        "MY": np.array([0, 0, 0, 0, 1, 0]),
+        "MZ": np.array([0, 0, 0, 0, 0, 1]),
+    }
     config = return_config_dict()
     dext = config["dWext"].split(",")
-    dWext = []
+    dWext = {}
+    for k in dext:
+        val = k.split(":")
+        res = np.zeros((6,))
+        key = ""
+        for dir in val:
+            if dir[0] == "-":
+                key += dir
+                res -= dext_ref[dir[1:]]
+            else:
+                key += ("+" + dir) if not key == "" else dir
+                res += dext_ref[dir]
+        dWext[key] = list(res)
     return dWext
+
+
+def main():
+    val = (
+        __file__.replace(os.path.dirname(__file__), "")[1:]
+        + " is meant to be imported not executed"
+    )
+    print(f"\033[91m {val}\033[00m")
+
+
+if __name__ == "__main__":
+    main()
