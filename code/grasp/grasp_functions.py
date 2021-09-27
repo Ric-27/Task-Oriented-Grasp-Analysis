@@ -1,3 +1,4 @@
+from __future__ import annotations
 import os, sys
 import numpy as np
 from numpy.linalg import matrix_rank
@@ -63,7 +64,7 @@ def list_to_vertical_matrix(list_):
     return result
 
 
-def get_H_and_l(contact_points: List[Contact]):
+def get_H_and_l(contact_points: List[Contact]) -> Tuple(np.ndarray, int):
     hi = []
     l = 0
     for contact in contact_points:
@@ -80,6 +81,24 @@ def is_nullspace_trivial(matrix: np.ndarray) -> bool:
         for elem in ns_m1d:
             if elem != 0:
                 return False
+    return True
+
+
+def is_grasp_valid(grasp: "Grasp") -> bool:
+    from class_grasp import Grasp
+
+    assert (
+        str(type(grasp)).split(".")[-1] == str(Grasp).split(".")[-1]
+    ), "\033[91m {}\033[00m".format("grasp argument must be of type Grasp")
+
+    G = grasp.get_Gt().transpose()
+    if get_rank(G) != 6:
+        return False
+    if not grasp.graspable:
+        return False
+    for contact in grasp.contact_points:
+        if contact.type != "HF":
+            return False
     return True
 
 

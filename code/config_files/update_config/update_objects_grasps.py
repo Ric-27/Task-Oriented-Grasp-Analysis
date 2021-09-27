@@ -19,11 +19,14 @@ for obj, mesh in tqdm(
         new_pts = {}
         for idx, pt in pts.items():
             new_pt = mesh.contact_from_point([pt["x"], pt["y"], pt["z"]])
+            rot = new_pt.r.round(3).flatten()
+            rotation = list(map(str, rot))
+            str_rm = ",".join(rotation)
             new_pts[idx] = {
                 "x": float(round(new_pt.c[0], 3)),
                 "y": float(round(new_pt.c[1], 3)),
                 "z": float(round(new_pt.c[2])),
-                "rm": str(new_pt.r.round(3).flatten()),
+                "rm": str_rm,
                 "mu": float(round(new_pt.mu, 3)),
             }
         objects[obj]["grasps"][grp] = new_pts

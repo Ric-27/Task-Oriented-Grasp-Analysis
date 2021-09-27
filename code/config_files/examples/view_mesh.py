@@ -1,31 +1,37 @@
-import keyboard, os, sys
+import os, sys
+import argparse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from functions import get_STLs_dict
+from functions import get_STLs_dict, object_file_name, print_if_worked
 
+parser = argparse.ArgumentParser(
+    description="view the grasps saved on the predetermined file"
+)
+parser.add_argument(
+    "-o",
+    "--object",
+    type=str,
+    default="",
+    help="select an object [def: all]",
+)
+args = parser.parse_args()
+OBJ = args.object
 stl_path = get_STLs_dict()
 
-# print("\nPress [q] to continue or [z + q] to exit\n")
 worked = False
-for obj, mesh in stl_path.items():
-    worked = True
-    print(
-        "{} \n range of model: \t X: {:.3f} - {:.3f} \t Y: {:.3f} - {:.3f} \t Z: {:.3f} - {:.3f}".format(
-            obj,
-            min(mesh.vertices[:, 0]),
-            max(mesh.vertices[:, 0]),
-            min(mesh.vertices[:, 1]),
-            max(mesh.vertices[:, 1]),
-            min(mesh.vertices[:, 2]),
-            max(mesh.vertices[:, 2]),
-        )
-    )
-    print(" COM: ", mesh.com)
-
-    mesh.view()
-    if keyboard.is_pressed("z"):
-        exit("\nExecution Cancelled\n")
-if worked:
-    print("\nFinished\n")
+if not OBJ == "":
+    if OBJ in stl_path:
+        worked = True
+        stl_path[OBJ].view(OBJ)
 else:
-    print("No stl files found\n")
+    for obj, mesh in stl_path.items():
+        worked = True
+        mesh.view(obj)
+
+print_if_worked(
+    worked,
+    "Finished" + 50 * " ",
+    "No objects declared on "
+    + object_file_name()
+    + ".yaml or object passed as argument doesn't exists",
+)

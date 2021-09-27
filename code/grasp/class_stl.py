@@ -1,18 +1,31 @@
 import sys, os
+from matplotlib.figure import Figure
 from stl import mesh
 import numpy as np
 from matplotlib import pyplot as plt
-from mpl_toolkits import mplot3d
+from mpl_toolkits.mplot3d import art3d
+from pylab import figure
 import random
-from typing import List
+from typing import List, Union
+import keyboard
 
 sys.path.append(os.path.dirname(__file__))
 from data_types import Contact
 
-PORC_LINES = 0.2
+LINE_PERC = 0.18
+TEXT_SIZE = 10
 X_W = np.array([1, 0, 0])
 Y_W = np.array([0, 1, 0])
 Z_W = np.array([0, 0, 1])
+O = np.array([0, 0, 0])
+
+
+def keypress(event):
+    if keyboard.is_pressed("esc"):
+        val = "EXECUTION CANCELLED" + 40 * " "
+        sys.exit(f"\033[91m{val}\033[00m")
+    if keyboard.is_pressed("q"):
+        plt.close()
 
 
 class STL:
@@ -26,18 +39,8 @@ class STL:
 
         self.__mesh = mesh.Mesh.from_file(path)
 
-        # self.volume, self.cog, self.inertia = self.__mesh.get_mass_properties()
-
         self.triangles = self.__mesh.vectors
         self.com = center_of_mass
-        # points = self.triangles.flatten().reshape(self.triangles.shape[0] * 3, 3)
-        # self.com = np.array(
-        #     [
-        #         sum(points[:, 0]) / points.shape[0],
-        #         sum(points[:, 1]) / points.shape[0],
-        #         sum(points[:, 2]) / points.shape[0],
-        #     ]
-        # )
         edges_temp = []
         for triangle in self.triangles:
             edges_temp.append([triangle[0], triangle[1]])
@@ -46,65 +49,111 @@ class STL:
         self.edges = np.array(edges_temp)
         self.vertices = self.triangles.flatten().reshape(self.triangles.shape[0] * 3, 3)
 
-    def view(self, contacts: List[Contact] = None):
-        """Shows the mesh as a surface in a matplot plot"""
+    def view(
+        self,
+        plot_name: str,
+        contacts: List[Contact] = None,
+        view_not_return: bool = True,
+    ) -> Union[Figure, None]:
 
-        figure = plt.figure()
-        if sys.version_info >= (3, 7):
-            ax = mplot3d.Axes3D(
-                figure,
-                auto_add_to_figure=False,
-                azim=30,
-            )  # Python 3.8
-            figure.add_axes(ax)  # Python 3.8
-        else:
-            ax = mplot3d.Axes3D(figure)  # Python 3.6
-
-        collection = mplot3d.art3d.Poly3DCollection(
-            self.triangles, linewidths=0.2, alpha=0.4
+        """View of the object, its center of mass and the world origin, and if passed all the contact points"""
+        fig = figure(figsize=(10, 10))
+        fig.canvas.mpl_connect("key_press_event", keypress)
+        ax = fig.add_subplot(projection="3d")
+        ax.set_facecolor("white")
+        ax.set_xlabel("x")
+        ax.set_ylabel("y")
+        ax.set_zlabel("z")
+        minx = round(float(min(self.vertices[:, 0])), 3)
+        maxx = round(float(max(self.vertices[:, 0])), 3)
+        miny = round(float(min(self.vertices[:, 1])), 3)
+        maxy = round(float(max(self.vertices[:, 1])), 3)
+        minz = round(float(min(self.vertices[:, 2])), 3)
+        maxz = round(float(max(self.vertices[:, 2])), 3)
+        title = f"{plot_name.upper()} \n X=({minx},{maxx}) Y=({miny},{maxy}) Z=({minz},{maxz}) \n COM: {self.com}"
+        plt.title(
+            label=title,
+            fontsize=10,
+            ha="center",
+            color="k",
+            fontname="monospace",
+            wrap=True,
         )
-        collection.set_facecolor([0.7, 0.7, 0.7])
-        collection.set_edgecolor([0, 0, 0])
+
+        collection = art3d.Poly3DCollection(self.triangles, linewidths=0.4)
+        collection.set_facecolor((1.0, 1.0, 1.0, 0.0))
+        collection.set_edgecolor((0.0, 0.0, 0.0, 0.2))
+
         ax.add_collection3d(collection)
+
+        ax.view_init(20, 45)
+
         scale = self.triangles.flatten()
-        biggest = max(max(scale), abs(min(scale)))
         ax.auto_scale_xyz(scale, scale, scale)
-        ax.scatter(0, 0, 0, color="black")
+
+        biggest = max(abs(scale))
+
+        line_size = biggest * LINE_PERC
+
+        ax.scatter(O[0], O[1], O[2], color="k")
+        if (self.com != O).any():
+            ax.text(O[0], O[1], O[2], "O", size=TEXT_SIZE, zorder=1, color="k")
         ax.plot(
-            (0, biggest * PORC_LINES * X_W[0]),
-            (0, biggest * PORC_LINES * X_W[1]),
-            (0, biggest * PORC_LINES * X_W[2]),
+            (O[0], line_size * X_W[0]),
+            (O[0], line_size * X_W[1]),
+            (O[0], line_size * X_W[2]),
             color="red",
         )
         ax.plot(
-            (0, biggest * PORC_LINES * Y_W[0]),
-            (0, biggest * PORC_LINES * Y_W[1]),
-            (0, biggest * PORC_LINES * Y_W[2]),
+            (O[1], line_size * Y_W[0]),
+            (O[1], line_size * Y_W[1]),
+            (O[1], line_size * Y_W[2]),
             color="green",
         )
         ax.plot(
-            (0, biggest * PORC_LINES * Z_W[0]),
-            (0, biggest * PORC_LINES * Z_W[1]),
-            (0, biggest * PORC_LINES * Z_W[2]),
+            (O[2], line_size * Z_W[0]),
+            (O[2], line_size * Z_W[1]),
+            (O[2], line_size * Z_W[2]),
             color="blue",
         )
-        ax.scatter(self.com[0], self.com[1], self.com[2], color="magenta")
-        if not contacts is None:
-            for contact in contacts:
-                n = np.dot(contact.r, X_W)
 
+        ax.scatter(self.com[0], self.com[1], self.com[2], color="orange")
+        ax.text(
+            self.com[0],
+            self.com[1],
+            self.com[2],
+            "COM",
+            size=TEXT_SIZE,
+            zorder=1,
+        )
+        if not contacts is None:
+            for idx, contact in enumerate(contacts, 0):
+                color = "darkred"
+                n = np.dot(contact.r, X_W)
                 cx = contact.c[0]
                 cy = contact.c[1]
                 cz = contact.c[2]
+                ax.text(cx, cy, cz, idx, size=TEXT_SIZE, zorder=1)
 
-                ax.scatter(cx, cy, cz, color="red")
-                ax.plot(
-                    (cx, (cx + n[0] * biggest * PORC_LINES)),
-                    (cy, (cy + n[1] * biggest * PORC_LINES)),
-                    (cz, (cz + n[2] * biggest * PORC_LINES)),
-                    color="red",
+                ax.scatter(
+                    cx,
+                    cy,
+                    cz,
+                    color=color,
+                    label=idx,
                 )
-        plt.show()
+                ax.plot(
+                    (cx, (cx + n[0] * line_size)),
+                    (cy, (cy + n[1] * line_size)),
+                    (cz, (cz + n[2] * line_size)),
+                    color=color,
+                )
+        if not view_not_return:
+            plt.close(fig="all")
+            return fig
+        else:
+            print("Press [q] to continue or [esc] to cancel execution", end="\r")
+            plt.show()
 
     def gen_C_randomly(
         self,

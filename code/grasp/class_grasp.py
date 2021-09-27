@@ -1,5 +1,9 @@
-import os
+from __future__ import annotations
+import os, sys
 import numpy as np
+
+sys.path.append(os.path.dirname(__file__))
+from data_types import Contact
 from grasp_functions import (
     block_diag,
     get_S,
@@ -7,23 +11,25 @@ from grasp_functions import (
     get_H_and_l,
     is_nullspace_trivial,
 )
+from typing import List
 
 np.set_printoptions(suppress=True)
 
 
 class Grasp:
-    def __init__(self, p, contact_points):
-        self.p = p
+    def __init__(self, p: List, contact_points: List[Contact]) -> "Grasp":
+        self.p = np.array(p)
         self.contact_points = contact_points
-        self.nc = contact_points.shape[0]
+        self.nc = len(contact_points)
         self.H = np.zeros(1)
-        self.Gt = np.zeros(1)
-        self.F = None
         self.l = 0
-        self.indeterminate = -1
-        self.graspable = -1
-        self.updt_H()
-        self.updt_classification()
+        self.Gt = np.zeros(1)
+        self.indeterminate = True
+        self.graspable = False
+        self.__updt_H()
+        self.__updt_classification()
+        self.__updt_Gt()
+        self.F = None
         not_hf = False
         for contact in contact_points:
             if contact.type != "HF":
@@ -33,23 +39,23 @@ class Grasp:
                 not_hf = True
                 break
         if not not_hf:
-            self.updt_F()
+            self.__updt_F()
 
-    def updt_F(self):
+    def __updt_F(self):
         fi = []
         for contact in self.contact_points:
             fi.append(contact.F)
         self.F = block_diag(fi)
 
-    def updt_H(self):
+    def __updt_H(self):
         self.H, self.l = get_H_and_l(self.contact_points)
 
     def get_Gt(self):
-        self.updt_Gt()
+        self.__updt_Gt()
         return self.Gt
 
     def get_classification(self, print_bool=False):
-        self.updt_classification()
+        self.__updt_classification()
         if print_bool:
             print("-" * 25)
             print("GRASP CLASSIFICATION: ")
@@ -76,14 +82,14 @@ class Grasp:
         result = np.dot(R.transpose(), Pi.transpose())
         return result
 
-    def updt_Gt(self):
+    def __updt_Gt(self):
         pGt = []
         for contact in self.contact_points:
             pGt.append(self.__pGi_t(contact.r, self.__pi(contact.c)))
         pGt = list_to_vertical_matrix(pGt)
         self.Gt = np.dot(self.H, pGt)
 
-    def updt_classification(self):
+    def __updt_classification(self):
         Gt = self.get_Gt()
         G = Gt.transpose()
         self.graspable = not is_nullspace_trivial(G)

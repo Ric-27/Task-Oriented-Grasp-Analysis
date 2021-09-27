@@ -1,6 +1,8 @@
 import os
 import yaml
 import numpy as np
+import pandas as pd
+from openpyxl import load_workbook
 from typing import Dict, List
 import ast
 import itertools
@@ -89,11 +91,23 @@ def stl_path_dict_item_to_STL(item_of_dict: Dict) -> STL:
     return STL(item_of_dict["stl path"], list(item_of_dict["center of mass"].values()))
 
 
+def grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
+    return [point_dict_to_Contact(pt) for pt in grp_item.values()]
+
+
+def point_dict_to_list(point_as_dict: Dict) -> List:
+    return [point_as_dict["x"], point_as_dict["y"], point_as_dict["z"]]
+
+
 def point_dict_to_Contact(point_as_dict: Dict) -> Contact:
+    location = point_dict_to_list(point_as_dict)
+    rot_matrix = point_as_dict["rm"].split(",")
+    rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
+    tangential_f_coef = point_as_dict["mu"]
     return Contact(
-        [point_as_dict["x"], point_as_dict["y"], point_as_dict["z"]],
-        np.array(float(point_as_dict["rm"])).reshape(3, 3),
-        point_as_dict["mu"],
+        location=location,
+        rotation_matrix=rotation_matrix,
+        tangential_f_coef=tangential_f_coef,
     )
 
 
@@ -105,18 +119,74 @@ def get_STLs_dict() -> Dict[str, STL]:
     return new_dict
 
 
+def get_grasps_STLs_dict() -> Dict[str, Dict]:
+    grasps = get_grasp_dict()
+    stl_path = get_STLs_dict()
+    objects = {}
+    for k in grasps:
+        objects[k] = grasps[k]
+        objects[k]["mesh"] = stl_path[k]
+    return objects
+
+
 def check_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str):
-    assert not (
-        (TARGET_GRP != "") and (TARGET_OBJ == "")
-    ), "Can't specify a grasp without specifying an object"
+    assert not ((TARGET_GRP != "") and (TARGET_OBJ == "")), red_txt(
+        "Can't specify a grasp without specifying an object"
+    )
+
+
+def check_save_for_excel(TARGET_OBJ: str, TARGET_GRP: str) -> bool:
+    if TARGET_OBJ != "" or TARGET_GRP != "":
+        print(red_txt("data wont be saved to Excel"), end="\r")
+        return False
+    else:
+        print(green_txt("data will be saved to Excel"), end="\r")
+        return True
+
+
+def save_to_excel(
+    name_of_file: str, name_of_sheet: str, data: List, columns: List, indexes: List
+):
+    path = path_join_str(path_starting_from_code(1), "excel/" + name_of_file + ".xlsx")
+    print(green_txt("saving..."), end="\r")
+    columns = ["grasp_name", "nc", "rank", "indeterminate", "graspable", "FFC"]
+    data = np.array(data)
+    dict_data = {}
+    for i, col in enumerate(columns, 0):
+        dict_data[col] = data[:, i]
+
+    book = load_workbook(path)
+    writer = pd.ExcelWriter(path, engine="openpyxl")
+    writer.book = book
+    writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
+    df = pd.DataFrame(dict_data, index=indexes, columns=columns)
+
+    df.to_excel(writer, sheet_name=name_of_sheet, index=True, na_rep="-")
+    writer.save()
+
+    print(
+        green_txt("saved data onto sheet:({}) of file:({})").format(
+            name_of_sheet, name_of_file
+        )
+        + 50 * " "
+    )
 
 
 def is_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str, obj: str, grp: str) -> bool:
-    if TARGET_OBJ != "":
-        if TARGET_OBJ != obj:
-            return True
-        elif TARGET_GRP != "" and TARGET_GRP != grp:
-            return True
+    if TARGET_OBJ == "":
+        return True
+    if TARGET_OBJ == obj and TARGET_GRP == "":
+        return True
+    if TARGET_OBJ == obj and TARGET_GRP == grp:
+        return True
+    return False
+
+
+def is_TARGET_OBJ(TARGET_OBJ: str, obj: str) -> bool:
+    if TARGET_OBJ == "":
+        return True
+    if TARGET_OBJ == obj:
+        return True
     return False
 
 
@@ -128,6 +198,7 @@ def save_yaml(name_of_file: str, dictionary: Dict):
         "w",
     ) as f:
         f.write(yaml.dump(dictionary, sort_keys=False))
+    print(green_txt(name_of_file + ".yaml saved"))
 
 
 def get_raw_force_dict() -> Dict:
@@ -165,9 +236,9 @@ def get_dwext_dict() -> Dict:
         "X": np.array([1, 0, 0, 0, 0, 0]),
         "Y": np.array([0, 1, 0, 0, 0, 0]),
         "Z": np.array([0, 0, 1, 0, 0, 0]),
-        "MX": np.array([0, 0, 0, 1, 0, 0]),
-        "MY": np.array([0, 0, 0, 0, 1, 0]),
-        "MZ": np.array([0, 0, 0, 0, 0, 1]),
+        "mX": np.array([0, 0, 0, 1, 0, 0]),
+        "mY": np.array([0, 0, 0, 0, 1, 0]),
+        "mZ": np.array([0, 0, 0, 0, 0, 1]),
     }
     config = return_config_dict()
     dext = config["dWext"].split(",")
@@ -187,12 +258,27 @@ def get_dwext_dict() -> Dict:
     return dWext
 
 
+def red_txt(txt: str) -> str:
+    return f"\033[91m{txt}\033[00m"
+
+
+def green_txt(txt: str) -> str:
+    return f"\033[92m{txt}\033[00m"
+
+
+def print_if_worked(worked: bool, yes: str, no: str):
+    if worked:
+        print(green_txt(yes))
+    else:
+        print(red_txt(no))
+
+
 def main():
     val = (
         __file__.replace(os.path.dirname(__file__), "")[1:]
         + " is meant to be imported not executed"
     )
-    print(f"\033[91m {val}\033[00m")
+    print(red_txt(val))
 
 
 if __name__ == "__main__":
