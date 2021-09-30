@@ -34,10 +34,11 @@ class Contact:
     def __init__(
         self,
         location: List,
-        rotation_matrix: np.array,
+        rotation_matrix: np.ndarray,
         tangential_f_coef: float = 0.3,
         torsional_f_coef: float = 0,
         number_cone_faces: int = 8,
+        adhesive_force: float = 0,
     ):
         assert (
             tangential_f_coef >= 0
@@ -46,12 +47,16 @@ class Contact:
         assert (
             number_cone_faces >= 3
         ), "Number of cone faces must be greater or equal to 3"
+        assert adhesive_force >= 0, "the adhesive force must be positive"
+        if not isinstance(location, np.ndarray):
+            location = np.array(location)
+
         self.c = location
         self.r = rotation_matrix
         self.mu = tangential_f_coef
         self.iota = torsional_f_coef
         self.ng = int(number_cone_faces)
-
+        self.fa = adhesive_force
         self.type = "None"
         self.F = np.zeros((1))
 
@@ -73,6 +78,8 @@ class Contact:
             self.h = np.concatenate((np.identity(4), np.zeros((4, 2))), axis=1)
         else:
             sys.exit("ERROR: Contact Type Invalid")
+        if self.fa != 0:
+            self.type += " with Adhesion"
 
     def upt_cone(self):
         S = []

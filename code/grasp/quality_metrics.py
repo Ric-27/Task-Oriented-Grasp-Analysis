@@ -9,7 +9,7 @@ import warnings
 warnings.filterwarnings(action="ignore", category=LinAlgWarning, module="scipy")
 
 sys.path.append(os.path.dirname(__file__))
-from grasp_functions import get_rank, is_grasp_valid
+from grasp_functions import is_grasp_valid
 from class_jacobian import Jacobian
 from class_grasp import Grasp
 
@@ -170,19 +170,25 @@ def alpha_from_direction(
     )
     rhs_eq = np.zeros((6,))
 
-    bnd_alpha = (0, None)
-    bnd_fcn = (sys.float_info.epsilon, fc_max)
-    bnd_fct = (None, None)
+    lower_bound = []
+    for val in grasp.contact_points:
+        lower_bound.append(val.fa)
 
     bnd = []
-    bnd.append(bnd_alpha)
+    bnd.append((0, None))  # alpha
 
     for i in range(L):
         if i % 3 == 0:
-            bnd.append(bnd_fcn)
+            low = (
+                sys.float_info.epsilon
+                if lower_bound[i // 3] == 0
+                else -lower_bound[i // 3]
+            )
+            bnd.append((low, fc_max))  # fcn
         else:
-            bnd.append(bnd_fct)
-
+            bnd.append((None, None))  # fct
+    print(bnd)
+    exit
     opt = linprog(
         c=obj,
         A_ub=lhs_ineq,

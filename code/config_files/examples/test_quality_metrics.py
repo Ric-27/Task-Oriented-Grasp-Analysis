@@ -84,7 +84,7 @@ print(
     )
 )
 print(80 * "-")
-forces = forces_from_perturbation(grasp_obj, [ALPHA * np.array(D_EXT)])[1]
+forces = forces_from_perturbation(grasp_obj, [ALPHA * np.array(D_EXT)])
 print(
     "KNOWN PERTURBATION: \nfor Perturbation={}, required Normal Contact Forces={}".format(
         str(ALPHA * np.array(D_EXT)), forces[::3].round(DECIMAL_PLACES)
