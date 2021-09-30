@@ -1,4 +1,4 @@
 object yaml file name: objects
 raw forces txt file name: raw_forces
-f max: 0.1:2:0.1,2:10:0.2,10:20,20:100:10 #start:stop:step [start,stop) if step == None -> step = 1 "," separator to vary the increments
+f max:  0.1:2:0.1,2:10:0.2,10:20,20:100:10 #start:stop:step [start,stop) if step == None -> step = 1 "," separator to vary the increments
 dWext: X,-X,Y,-Y,Z,-Z,X:Y:Z,-X:Y:Z,-X:-Y:Z,X:-Y:Z,X:Y:-Z,-X:Y:-Z,-X:-Y:-Z,X:-Y:-Z,mX,-mX,mY,-mY,mZ,-mZ,mX:mY:mZ,-mX:mY:mZ,-mX:-mY:mZ,mX:-mY:mZ,mX:mY:-mZ,-mX:mY:-mZ,-mX:-mY:-mZ,mX:-mY:-mZ,X:Y:Z:mX:mY:mZ # "," separator for analysis, ":" Multiple directions in the same analysis, "-" to indicate negative direcction

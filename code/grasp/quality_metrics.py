@@ -3,7 +3,7 @@ import sys, os
 import numpy as np
 from scipy.optimize import linprog
 from scipy.linalg import LinAlgWarning
-from typing import List, Tuple
+from typing import List, Tuple, Union
 import warnings
 
 warnings.filterwarnings(action="ignore", category=LinAlgWarning, module="scipy")
@@ -141,7 +141,7 @@ def force_closure(grasp: "Grasp", jacobian: "Jacobian") -> bool:
 
 def alpha_from_direction(
     grasp: "Grasp", d_ext: List, fc_max: int = 10
-) -> Tuple(int, np.ndarray):
+) -> Tuple(float, np.ndarray):
     G = grasp.get_Gt().transpose()
     L = grasp.l
     if not is_grasp_valid(grasp):
@@ -198,31 +198,17 @@ def alpha_from_direction(
         return 0, np.zeros((L,))
 
 
-def forces_from_perturbation(grasp: Grasp, perturbation: List) -> List:
-    G = grasp.Gt.transpose()
+def forces_from_perturbation(grasp: Grasp, perturbation: List) -> Union(float, List):
     L = grasp.l
-    if get_rank(G) != 6:
-        # print("ERROR: rank of G is not equal to 6")
-        # print("Cant Calculate Fc")
-        return -1, np.zeros((L,))
-    if not grasp.graspable:
-        # print("ERROR: G is not Graspable")
-        # print("Fc cant be found")
-        return -1, np.zeros((L,))
-    not_hf = False
-    for contact in grasp.contact_points:
-        if contact.type != "HF":
-            not_hf = True
-            break
-    if not_hf:
-        print(
-            "ERROR: Original definition of contact models is not Hard Finger for all contacts"
-        )
-        return -1, np.zeros((L,))
-    F = grasp.F
-    lF = np.shape(F)[0]
+    if not is_grasp_valid(grasp):
+        return np.zeros((L,))
+
     if not isinstance(perturbation, np.ndarray):
         perturbation = np.array(perturbation)
+
+    G = grasp.Gt.transpose()
+    F = grasp.F
+    lF = np.shape(F)[0]
 
     # min(z)
     obj = np.zeros((L + 1, 1))
@@ -230,15 +216,18 @@ def forces_from_perturbation(grasp: Grasp, perturbation: List) -> List:
 
     # -F*fc <= 0 (F*fc > 0)
     # fc - z <= (fc <= z)
-    lhs_ineq = np.block([[np.zeros((lF, 1)), -F], [-1 * np.ones((L, 1)), np.eye(L)]])
+    fcn_coef = np.zeros((L, L))
+    for i in range(L):
+        fcn_coef[i, i] = 1 if not i % 1 else 0  # when one equiv to eye
+    lhs_ineq = np.block([[np.zeros((lF, 1)), -F], [-1 * np.ones((L, 1)), fcn_coef]])
     rhs_ineq = np.zeros((lF + L,))
     # G*fc = -g (G*fc + alpha*dext = 0)
     lhs_eq = np.concatenate((np.zeros((6, 1)), G), axis=1)
     rhs_eq = -perturbation
 
     bnd = []
-    bnd.append((None, None))
-    bnd_fcn = (0, None)
+    bnd.append((0, None))
+    bnd_fcn = (0.1, None)
     bnd_fct = (None, None)
 
     for i in range(L):
@@ -258,8 +247,8 @@ def forces_from_perturbation(grasp: Grasp, perturbation: List) -> List:
     )
 
     if opt.success:
-        return opt.fun, opt.x[1:]
-    return 0, np.zeros((L,))
+        return opt.x[1:]
+    return np.zeros((L,))
 
 
 def main():

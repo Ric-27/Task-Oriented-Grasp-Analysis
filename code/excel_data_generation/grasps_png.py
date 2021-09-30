@@ -8,7 +8,7 @@ from functions import (
     print_if_worked,
     path_join_str,
     path_starting_from_code,
-    check_TARGET_OBJ_GRP,
+    assert_TARGET_OBJ_GRP,
     get_grasps_STLs_dict,
     is_TARGET_OBJ_GRP,
     grp_item_to_Contacts,
@@ -36,7 +36,7 @@ args = parser.parse_args()
 OBJ = args.object
 GRP = args.grasp
 
-check_TARGET_OBJ_GRP(OBJ, GRP)
+assert_TARGET_OBJ_GRP(OBJ, GRP)
 
 objects = get_grasps_STLs_dict()
 

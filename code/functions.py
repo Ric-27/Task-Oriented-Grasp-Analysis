@@ -1,14 +1,19 @@
 import os
+from numpy.lib.arraysetops import isin
 import yaml
 import numpy as np
 import pandas as pd
 from openpyxl import load_workbook
-from typing import Dict, List
+from typing import Dict, List, Union, Optional
 import ast
 import itertools
 
 from grasp.data_types import Contact
 from grasp.class_stl import STL
+
+
+def red_txt(txt: str) -> str:
+    return f"\033[91m{txt}\033[00m"
 
 
 def path_starting_from_code(go_back_n_times: int = 0) -> str:
@@ -129,7 +134,7 @@ def get_grasps_STLs_dict() -> Dict[str, Dict]:
     return objects
 
 
-def check_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str):
+def assert_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str):
     assert not ((TARGET_GRP != "") and (TARGET_OBJ == "")), red_txt(
         "Can't specify a grasp without specifying an object"
     )
@@ -137,23 +142,29 @@ def check_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str):
 
 def check_save_for_excel(TARGET_OBJ: str, TARGET_GRP: str) -> bool:
     if TARGET_OBJ != "" or TARGET_GRP != "":
-        print(red_txt("data wont be saved to Excel"), end="\r")
+        print(red_txt("data wont be saved to Excel"))
         return False
     else:
-        print(green_txt("data will be saved to Excel"), end="\r")
+        print(green_txt("data will be saved to Excel"))
         return True
 
 
 def save_to_excel(
-    name_of_file: str, name_of_sheet: str, data: List, columns: List, indexes: List
-):
+    name_of_file: str,
+    name_of_sheet: str,
+    data: Union[List, Dict],
+    columns: List,
+    indexes: List,
+) -> None:
     path = path_join_str(path_starting_from_code(1), "excel/" + name_of_file + ".xlsx")
     print(green_txt("saving..."), end="\r")
-    columns = ["grasp_name", "nc", "rank", "indeterminate", "graspable", "FFC"]
-    data = np.array(data)
     dict_data = {}
-    for i, col in enumerate(columns, 0):
-        dict_data[col] = data[:, i]
+    if isinstance(data, list):
+        data = np.array(data)
+        for i, col in enumerate(columns, 0):
+            dict_data[col] = data[:, i]
+    else:
+        dict_data = data
 
     book = load_workbook(path)
     writer = pd.ExcelWriter(path, engine="openpyxl")
@@ -161,7 +172,7 @@ def save_to_excel(
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
     df = pd.DataFrame(dict_data, index=indexes, columns=columns)
 
-    df.to_excel(writer, sheet_name=name_of_sheet, index=True, na_rep="-")
+    df.to_excel(writer, sheet_name=name_of_sheet, index=True, na_rep="")
     writer.save()
 
     print(
@@ -169,6 +180,15 @@ def save_to_excel(
             name_of_sheet, name_of_file
         )
         + 50 * " "
+    )
+
+
+def read_excel(file_name: str, sheet_name: str) -> pd.DataFrame:
+    return pd.read_excel(
+        path_join_str(path_starting_from_code(1), "excel/" + file_name + ".xlsx"),
+        sheet_name=sheet_name,
+        index_col=0,
+        engine="openpyxl",
     )
 
 
@@ -207,6 +227,7 @@ def get_raw_force_dict() -> Dict:
 
 def get_fmax_list() -> List:
     config = return_config_dict()
+    assert isinstance(config["f max"], str), red_txt("f max in config must be str")
     fmax = config["f max"].split(",")
     fmax_t = []
     for value_fmax in fmax:
@@ -256,10 +277,6 @@ def get_dwext_dict() -> Dict:
                 res += dext_ref[dir]
         dWext[key] = list(res)
     return dWext
-
-
-def red_txt(txt: str) -> str:
-    return f"\033[91m{txt}\033[00m"
 
 
 def green_txt(txt: str) -> str:

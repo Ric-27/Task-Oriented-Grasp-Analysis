@@ -7,7 +7,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from grasp.class_stl import STL
 from grasp.class_grasp import Grasp
 from functions import (
-    check_TARGET_OBJ_GRP,
+    assert_TARGET_OBJ_GRP,
     get_grasps_STLs_dict,
     is_TARGET_OBJ_GRP,
     point_dict_to_Contact,
@@ -44,7 +44,7 @@ args = parser.parse_args()
 OBJ = args.object
 GRP = args.grasp
 
-check_TARGET_OBJ_GRP(OBJ, GRP)
+assert_TARGET_OBJ_GRP(OBJ, GRP)
 
 objects = get_grasps_STLs_dict()
 
