@@ -1,10 +1,10 @@
 import os
-from numpy.lib.arraysetops import isin
 import yaml
 import numpy as np
+from numpy.linalg import norm
 import pandas as pd
 from openpyxl import load_workbook
-from typing import Dict, List, Union, Optional
+from typing import Dict, List, Union
 import ast
 import itertools
 
@@ -275,6 +275,12 @@ def get_dwext_dict() -> Dict:
             else:
                 key += ("+" + dir) if not key == "" else dir
                 res += dext_ref[dir]
+        norm_lin = norm(res[:3], 2)
+        norm_mom = norm(res[3:], 2)
+        if norm_lin:
+            res[:3] /= norm_lin
+        if norm_mom:
+            res[3:] /= norm_mom
         dWext[key] = list(res)
     return dWext
 

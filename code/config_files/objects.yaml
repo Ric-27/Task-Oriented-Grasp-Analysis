@@ -303,6 +303,7 @@ petri:
       mx: -0.0739617545159946
       my: 0.0739617545159946
       mz: 0.0
+  characteristic length: 0.0506
 marker:
   stl file name: marker
   center of mass:
@@ -483,6 +484,7 @@ marker:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0901
 marker_cap:
   stl file name: marker_cap
   center of mass:
@@ -636,6 +638,7 @@ marker_cap:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.03
 kit:
   stl file name: kit
   center of mass:
@@ -780,6 +783,7 @@ kit:
       mx: 2.6
       my: -1.2
       mz: 0.0
+  characteristic length: 0.1482
 kit_tab:
   stl file name: kit_tab
   center of mass:
@@ -833,6 +837,7 @@ kit_tab:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.018
 canister:
   stl file name: canister
   center of mass:
@@ -1069,6 +1074,7 @@ canister:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0782
 tube:
   stl file name: tube
   center of mass:
@@ -1209,6 +1215,7 @@ tube:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0251
 needle:
   stl file name: needle
   center of mass:
@@ -1321,6 +1328,7 @@ needle:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.054
 needle_cap:
   stl file name: needle_cap
   center of mass:
@@ -1374,6 +1382,7 @@ needle_cap:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0737
 rinse_glass:
   stl file name: rinse_glass
   center of mass:
@@ -1599,6 +1608,7 @@ rinse_glass:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.1111
 red_plug:
   stl file name: red_plug
   center of mass:
@@ -1691,6 +1701,7 @@ red_plug:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0117
 glass_vial:
   stl file name: glass_vial
   center of mass:
@@ -1745,6 +1756,7 @@ glass_vial:
       mx: 0.0
       my: -1.5
       mz: 0.0
+  characteristic length: 0.0732
 yellow_plug:
   stl file name: yellow_plug
   center of mass:
@@ -1824,6 +1836,7 @@ yellow_plug:
       mx: 0.0
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0157
 tube_clamp:
   stl file name: tube_clamp
   center of mass:
@@ -1929,6 +1942,7 @@ tube_clamp:
       mx: -0.06665
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0217
 scissors:
   stl file name: scissors
   center of mass:
@@ -2001,3 +2015,4 @@ scissors:
       mx: -2.75
       my: 0.0
       mz: 0.0
+  characteristic length: 0.0707

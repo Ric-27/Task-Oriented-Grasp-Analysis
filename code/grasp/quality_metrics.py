@@ -7,6 +7,7 @@ from typing import List, Tuple, Union
 import warnings
 
 warnings.filterwarnings(action="ignore", category=LinAlgWarning, module="scipy")
+warnings.filterwarnings(action="ignore", category=RuntimeWarning, module="scipy")
 
 sys.path.append(os.path.dirname(__file__))
 from grasp_functions import is_grasp_valid
@@ -145,7 +146,7 @@ def alpha_from_direction(
     G = grasp.get_Gt().transpose()
     L = grasp.l
     if not is_grasp_valid(grasp):
-        return 0, np.zeros((L,))
+        return -2, np.zeros((L,))
 
     if not isinstance(d_ext, np.ndarray):
         d_ext = np.array(d_ext)
@@ -156,9 +157,13 @@ def alpha_from_direction(
     obj = np.zeros((L + 1, 1))
     obj[0] = -1
 
-    # 0*alpha - F*fc <= 0 (F*fc > 0)
+    # 0*alpha - F*fc <= F*fa (F*fc > -F*fa)
+    fa = np.zeros((L,))
+    for i in range(0, L, 3):
+        fa[i] = grasp.contact_points[i // 3].fa
+
     lhs_ineq = np.concatenate((np.zeros((lF, 1)), -F), axis=1)
-    rhs_ineq = -sys.float_info.epsilon * np.ones((lF, 1)).flatten()
+    rhs_ineq = (F @ fa).flatten()
 
     # dWext*alpha + G*fc = 0
     lhs_eq = np.concatenate(
@@ -179,29 +184,26 @@ def alpha_from_direction(
 
     for i in range(L):
         if i % 3 == 0:
-            low = (
-                sys.float_info.epsilon
-                if lower_bound[i // 3] == 0
-                else -lower_bound[i // 3]
-            )
-            bnd.append((low, fc_max))  # fcn
+            bnd.append((None, fc_max))  # fcn
         else:
             bnd.append((None, None))  # fct
-    print(bnd)
-    exit
-    opt = linprog(
-        c=obj,
-        A_ub=lhs_ineq,
-        b_ub=rhs_ineq,
-        A_eq=lhs_eq,
-        b_eq=rhs_eq,
-        bounds=bnd,
-        method="revised simplex",
-    )
-    if opt.success:
-        return opt.x[0], opt.x[1:]
+    try:
+        opt = linprog(
+            c=obj,
+            A_ub=lhs_ineq,
+            b_ub=rhs_ineq,
+            A_eq=lhs_eq,
+            b_eq=rhs_eq,
+            bounds=bnd,
+            method="revised simplex",
+        )
+    except Exception:
+        return -1, np.zeros((L,))
     else:
-        return 0, np.zeros((L,))
+        if opt.success:
+            return opt.x[0], opt.x[1:]
+        else:
+            return 0, np.zeros((L,))
 
 
 def forces_from_perturbation(grasp: Grasp, perturbation: List) -> Union(float, List):

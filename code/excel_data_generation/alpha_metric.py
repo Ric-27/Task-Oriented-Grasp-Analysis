@@ -10,7 +10,7 @@ from functions import (
     assert_TARGET_OBJ_GRP,
     get_dwext_dict,
     get_fmax_list,
-    get_grasp_dict,
+    get_object_dict,
     red_txt,
     check_save_for_excel,
     is_TARGET_OBJ_GRP,
@@ -62,7 +62,7 @@ assert_TARGET_OBJ_GRP(OBJ, GRP)
 
 assert FMAX >= 0, red_txt("fmax must be positive")
 
-grasps = get_grasp_dict()
+objs = get_object_dict()
 fmaxs = get_fmax_list()
 dwext = get_dwext_dict()
 
@@ -77,17 +77,17 @@ prev_obj = ""
 worked = False
 save = check_save_for_excel(OBJ, GRP)
 
-for obj in tqdm(
-    grasps,
-    total=len(grasps),
+for obj, items in tqdm(
+    objs.items(),
+    total=len(objs),
     unit="obj",
     colour="red",
     leave=True,
     desc="Updating Alpha Info of Excel file",
 ):
     for grp in tqdm(
-        grasps[obj]["grasps"],
-        total=len(grasps[obj]["grasps"]),
+        items["grasps"],
+        total=len(items["grasps"]),
         unit="grp",
         colour="yellow",
         leave=False,
@@ -97,8 +97,8 @@ for obj in tqdm(
             index.append(obj + "-" + grp)
             worked = True
             grasp_obj = Grasp(
-                point_dict_to_list(grasps[obj]["center of mass"]),
-                grp_item_to_Contacts(grasps[obj]["grasps"][grp]),
+                point_dict_to_list(items["center of mass"]),
+                grp_item_to_Contacts(items["grasps"][grp]),
             )
         data_obj = []
         for f_max in tqdm(
@@ -118,6 +118,9 @@ for obj in tqdm(
                 desc=f"going through directions of {f_max}",
             ):
                 worked = True
+                d_w_ext[3] *= items["characteristic length"]
+                d_w_ext[4] *= items["characteristic length"]
+                d_w_ext[5] *= items["characteristic length"]
                 alpha = round(alpha_from_direction(grasp_obj, d_w_ext, f_max)[0], 3)
                 data_obj.append(alpha)
                 if not save:

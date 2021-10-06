@@ -4,7 +4,8 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from grasp.class_grasp import Grasp
-from grasp.quality_metrics import friction_form_closure, get_rank
+from grasp.quality_metrics import friction_form_closure
+from grasp.grasp_functions import get_rank
 from functions import (
     assert_TARGET_OBJ_GRP,
     get_grasp_dict,
