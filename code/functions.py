@@ -4,12 +4,13 @@ import numpy as np
 from numpy.linalg import norm
 import pandas as pd
 from openpyxl import load_workbook
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Tuple
 import ast
 import itertools
 
 from grasp.data_types import Contact
 from grasp.class_stl import STL
+from grasp.class_grasp import Grasp
 
 
 def red_txt(txt: str) -> str:
@@ -27,7 +28,7 @@ def path_join_str(path: str, name: str) -> str:
     return os.path.join(path, name)
 
 
-def open_file_on_config_dir(file_name: str, extention: str = "yaml") -> Dict:
+def __open_file_on_config_dir(file_name: str, extention: str = "yaml") -> Dict:
     ext = "."
     ext += extention
     with open(
@@ -42,44 +43,44 @@ def open_file_on_config_dir(file_name: str, extention: str = "yaml") -> Dict:
             return ast.literal_eval(f.read())
 
 
-def return_config_dict() -> Dict:
-    return open_file_on_config_dir("config")
+def __return_config_dict() -> Dict:
+    return __open_file_on_config_dir("config")
 
 
-def file_name(key: str) -> str:
-    config = return_config_dict()
+def __get_value_of_key_in_config_file(key: str) -> str:
+    config = __return_config_dict()
     return config[key]
 
 
 def object_file_name() -> str:
-    return file_name("object yaml file name")
+    return __get_value_of_key_in_config_file("object yaml file name")
 
 
-def raw_forces_file_name() -> str:
-    return file_name("raw forces txt file name")
+def __raw_forces_file_name() -> str:
+    return __get_value_of_key_in_config_file("raw forces txt file name")
 
 
 def get_object_dict() -> Dict:
-    return open_file_on_config_dir(object_file_name())
+    return __open_file_on_config_dir(object_file_name())
 
 
-def get_grasp_dict() -> Dict:
+def __get_grasp_dict() -> Dict:
     objects = get_object_dict()
+    result = {}
     for obj in objects:
-        if "forces" in objects[obj]:
-            objects[obj].pop("forces")
-    return objects
+        result[obj] = objects[obj]["grasps"]
+    return result
 
 
-def get_forces_dict() -> Dict:
+def __get_forces_dict() -> Dict:
     objects = get_object_dict()
+    result = {}
     for obj in objects:
-        if "grasps" in objects[obj]:
-            objects[obj].pop("grasps")
-    return objects
+        result[obj] = objects[obj]["forces"]
+    return result
 
 
-def get_stl_path_dict() -> dict:
+def __get_stl_path_dict() -> dict:
     objects = get_object_dict()
     path = path_join_str(path_starting_from_code(1), "stl/")
     for obj in objects:
@@ -92,20 +93,16 @@ def get_stl_path_dict() -> dict:
     return objects
 
 
-def stl_path_dict_item_to_STL(item_of_dict: Dict) -> STL:
+def __stl_path_dict_item_to_STL(item_of_dict: Dict) -> STL:
     return STL(item_of_dict["stl path"], list(item_of_dict["center of mass"].values()))
 
 
-def grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
-    return [point_dict_to_Contact(pt) for pt in grp_item.values()]
-
-
-def point_dict_to_list(point_as_dict: Dict) -> List:
+def __coordinate_dict_to_list(point_as_dict: Dict) -> List:
     return [point_as_dict["x"], point_as_dict["y"], point_as_dict["z"]]
 
 
-def point_dict_to_Contact(point_as_dict: Dict) -> Contact:
-    location = point_dict_to_list(point_as_dict)
+def __contact_point_dict_to_Contact(point_as_dict: Dict) -> Contact:
+    location = __coordinate_dict_to_list(point_as_dict)
     rot_matrix = point_as_dict["rm"].split(",")
     rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
     tangential_f_coef = point_as_dict["mu"]
@@ -116,32 +113,64 @@ def point_dict_to_Contact(point_as_dict: Dict) -> Contact:
     )
 
 
-def get_STLs_dict() -> Dict[str, STL]:
-    objects = get_stl_path_dict()
-    new_dict = {}
+def __grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
+    return [__contact_point_dict_to_Contact(pt) for pt in grp_item.values()]
+
+
+def get_STL_dict() -> Dict[str, STL]:
+    objects = __get_stl_path_dict()
+    result = {}
     for k, v in objects.items():
-        new_dict[k] = stl_path_dict_item_to_STL(v)
-    return new_dict
+        result[k] = __stl_path_dict_item_to_STL(v)
+    return result
 
 
-def get_grasps_STLs_dict() -> Dict[str, Dict]:
-    grasps = get_grasp_dict()
-    stl_path = get_STLs_dict()
-    objects = {}
-    for k in grasps:
-        objects[k] = grasps[k]
-        objects[k]["mesh"] = stl_path[k]
-    return objects
+def get_GRP_dict() -> Dict[str, Grasp]:
+    grasps = __get_grasp_dict()
+    result = {}
+    for obj, values in grasps.items():
+        for key_grasp, val_grasp in values["grasps"].items():
+            result[obj + "-" + key_grasp] = Grasp(
+                __coordinate_dict_to_list(values["center of mass"]),
+                __grp_item_to_Contacts(val_grasp),
+            )
+    return result
 
 
-def assert_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str):
+def get_FRC_dict() -> Dict[str, List]:
+    forces = __get_forces_dict()
+    result = {}
+    for obj, values in forces.items():
+        for key_force, val_force in values["forces"].items():
+            value = val_force[1:-2].split(",")
+            frc = [float(i) for i in value]
+            result[obj + "-" + key_force] = frc
+    return result
+
+
+def get_OBJECT_dict() -> Dict[str, Dict]:
+    return {
+        "forces": get_FRC_dict(),
+        "grasps": get_GRP_dict(),
+        "meshes": get_STL_dict(),
+    }
+
+
+def partition_str(text: str, partition: str = "-") -> Tuple(str, str):
+    part = text.partition(partition)
+    return part[0], part[2]
+
+
+def assert_OBJ_exist_if_GRP_exist(TARGET_OBJ: str, TARGET_GRP: str):
     assert not ((TARGET_GRP != "") and (TARGET_OBJ == "")), red_txt(
         "Can't specify a grasp without specifying an object"
     )
 
 
-def check_save_for_excel(TARGET_OBJ: str, TARGET_GRP: str) -> bool:
-    if TARGET_OBJ != "" or TARGET_GRP != "":
+def check_if_save(
+    TARGET_OBJ: str = "", TARGET_GRP: str = "", TARGET_FRC: str = ""
+) -> bool:
+    if TARGET_OBJ != "" or TARGET_GRP != "" or TARGET_GRP != "":
         print(red_txt("data wont be saved to Excel"))
         return False
     else:
@@ -150,11 +179,11 @@ def check_save_for_excel(TARGET_OBJ: str, TARGET_GRP: str) -> bool:
 
 
 def save_to_excel(
-    name_of_file: str,
     name_of_sheet: str,
     data: Union[List, Dict],
     columns: List,
     indexes: List,
+    name_of_file: str = "Task Oriented Analysis",
 ) -> None:
     path = path_join_str(path_starting_from_code(1), "excel/" + name_of_file + ".xlsx")
     print(green_txt("saving..."), end="\r")
@@ -183,7 +212,9 @@ def save_to_excel(
     )
 
 
-def read_excel(file_name: str, sheet_name: str) -> pd.DataFrame:
+def read_excel(
+    sheet_name: str, file_name: str = "Task Oriented Analysis"
+) -> pd.DataFrame:
     return pd.read_excel(
         path_join_str(path_starting_from_code(1), "excel/" + file_name + ".xlsx"),
         sheet_name=sheet_name,
@@ -192,7 +223,7 @@ def read_excel(file_name: str, sheet_name: str) -> pd.DataFrame:
     )
 
 
-def is_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str, obj: str, grp: str) -> bool:
+def is_obj_grp_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str, obj: str, grp: str) -> bool:
     if TARGET_OBJ == "":
         return True
     if TARGET_OBJ == obj and TARGET_GRP == "":
@@ -202,7 +233,7 @@ def is_TARGET_OBJ_GRP(TARGET_OBJ: str, TARGET_GRP: str, obj: str, grp: str) -> b
     return False
 
 
-def is_TARGET_OBJ(TARGET_OBJ: str, obj: str) -> bool:
+def is_obj_OBJ(TARGET_OBJ: str, obj: str) -> bool:
     if TARGET_OBJ == "":
         return True
     if TARGET_OBJ == obj:
@@ -222,11 +253,11 @@ def save_yaml(name_of_file: str, dictionary: Dict):
 
 
 def get_raw_force_dict() -> Dict:
-    return open_file_on_config_dir(raw_forces_file_name(), "txt")
+    return __open_file_on_config_dir(__raw_forces_file_name(), "txt")
 
 
 def get_fmax_list() -> List:
-    config = return_config_dict()
+    config = __return_config_dict()
     assert isinstance(config["f max"], str), red_txt("f max in config must be str")
     fmax = config["f max"].split(",")
     fmax_t = []
@@ -261,7 +292,7 @@ def get_dwext_dict() -> Dict:
         "mY": np.array([0, 0, 0, 0, 1, 0]),
         "mZ": np.array([0, 0, 0, 0, 0, 1]),
     }
-    config = return_config_dict()
+    config = __return_config_dict()
     dext = config["dWext"].split(",")
     dWext = {}
     for k in dext:

@@ -8,10 +8,10 @@ from grasp.quality_metrics import friction_form_closure
 from grasp.grasp_functions import get_rank
 from functions import (
     assert_TARGET_OBJ_GRP,
-    get_grasp_dict,
+    __get_grasp_dict,
     is_TARGET_OBJ_GRP,
-    point_dict_to_list,
-    grp_item_to_Contacts,
+    __coordinate_dict_to_list,
+    __grp_item_to_Contacts,
     check_save_for_excel,
     save_to_excel,
     print_if_worked,
@@ -41,7 +41,7 @@ GRP = args.grasp
 
 assert_TARGET_OBJ_GRP(OBJ, GRP)
 
-grasps = get_grasp_dict()
+grasps = __get_grasp_dict()
 
 print(parser.format_usage())
 
@@ -72,8 +72,8 @@ for obj in tqdm(
         if is_TARGET_OBJ_GRP(OBJ, GRP, obj, grp):
             worked = True
             grasp_obj = Grasp(
-                point_dict_to_list(grasps[obj]["center of mass"]),
-                grp_item_to_Contacts(grasps[obj]["grasps"][grp]),
+                __coordinate_dict_to_list(grasps[obj]["center of mass"]),
+                __grp_item_to_Contacts(grasps[obj]["grasps"][grp]),
             )
             d = friction_form_closure(grasp_obj)[0]
             row = [

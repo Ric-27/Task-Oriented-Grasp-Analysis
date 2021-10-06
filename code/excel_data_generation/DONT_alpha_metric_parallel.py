@@ -11,13 +11,13 @@ from functions import (
     assert_TARGET_OBJ_GRP,
     get_dwext_dict,
     get_fmax_list,
-    get_grasp_dict,
+    __get_grasp_dict,
     red_txt,
     green_txt,
     check_save_for_excel,
     is_TARGET_OBJ_GRP,
-    point_dict_to_list,
-    grp_item_to_Contacts,
+    __coordinate_dict_to_list,
+    __grp_item_to_Contacts,
     save_to_excel,
     print_if_worked,
 )
@@ -65,8 +65,8 @@ def gen_OBJ_GRP_par(arg):
             (
                 key + "-" + key_grasp,
                 Grasp(
-                    point_dict_to_list(values["center of mass"]),
-                    grp_item_to_Contacts(val_grasp),
+                    __coordinate_dict_to_list(values["center of mass"]),
+                    __grp_item_to_Contacts(val_grasp),
                 ),
             )
         )
@@ -114,7 +114,7 @@ def gen_FMAX_DIR_par(arg):
 
 if __name__ == "__main__":
     print(red_txt("started"))
-    grasps = get_grasp_dict()
+    grasps = __get_grasp_dict()
     with Pool(processes=os.cpu_count()) as p:
         result = p.map(gen_OBJ_GRP_par, grasps.items())
     l = []

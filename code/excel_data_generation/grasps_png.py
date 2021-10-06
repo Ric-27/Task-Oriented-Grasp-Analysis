@@ -11,7 +11,7 @@ from functions import (
     assert_TARGET_OBJ_GRP,
     get_grasps_STLs_dict,
     is_TARGET_OBJ_GRP,
-    grp_item_to_Contacts,
+    __grp_item_to_Contacts,
 )
 
 parser = argparse.ArgumentParser(
@@ -61,7 +61,7 @@ for obj in tqdm(
     ):
         if is_TARGET_OBJ_GRP(OBJ, GRP, obj, grp):
             worked = True
-            contact_points = grp_item_to_Contacts(objects[obj]["grasps"][grp])
+            contact_points = __grp_item_to_Contacts(objects[obj]["grasps"][grp])
             mesh.view(obj + "-" + grp, contact_points, view_not_return=False).savefig(
                 path_join_str(
                     path_starting_from_code(1),

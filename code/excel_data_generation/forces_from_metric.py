@@ -11,8 +11,8 @@ from functions import (
     assert_TARGET_OBJ_GRP,
     get_object_dict,
     is_TARGET_OBJ_GRP,
-    point_dict_to_list,
-    grp_item_to_Contacts,
+    __coordinate_dict_to_list,
+    __grp_item_to_Contacts,
     check_save_for_excel,
     save_to_excel,
     print_if_worked,
@@ -109,8 +109,8 @@ for obj, items in tqdm(
 
             worked = True
             grasp_obj = Grasp(
-                point_dict_to_list(items["center of mass"]),
-                grp_item_to_Contacts(items["grasps"][grp]),
+                __coordinate_dict_to_list(items["center of mass"]),
+                __grp_item_to_Contacts(items["grasps"][grp]),
             )
             for key_force, value_force in items["forces"].items():
                 value_force = list(value_force.values())

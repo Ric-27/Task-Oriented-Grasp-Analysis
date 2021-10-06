@@ -4,15 +4,33 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from functions import (
-    get_grasp_dict,
+    __get_grasp_dict,
     save_yaml,
     get_raw_force_dict,
     object_file_name,
 )
 
-data = get_raw_force_dict()
+old_data = get_raw_force_dict()
+dir_sup = ["X", "Y", "Z"]
+data = {}
+for key, items in old_data.items():
+    obj = key.partition("-")[0]
+    frc = key.partition("-")[2]
+    if frc == "hold":
+        for di in dir_sup:
+            mag = abs(items[0][0])
+            data[key + "_" + di] = [[mag, di, "com"]]
+            data[key + "_-" + di] = [[-1 * mag, di, "com"]]
+    else:
+        data[key] = items
 
-objects = get_grasp_dict()
+objects = __get_grasp_dict()
+
+vec_helper = {
+    "X": np.array([1, 0, 0], dtype=float),
+    "Y": np.array([0, 1, 0], dtype=float),
+    "Z": np.array([0, 0, 1], dtype=float),
+}
 
 for key, item in tqdm(
     data.items(),
@@ -29,34 +47,18 @@ for key, item in tqdm(
 
     forces = np.zeros((6,))
     for point in item:
-        if point[1] == "X":
-            vec = np.array([point[0], 0, 0])
-        elif point[1] == "Y":
-            vec = np.array([0, point[0], 0])
-        else:
-            vec = np.array([0, 0, point[0]])
+        mag = point[0]
+        di = point[1]
+        fov = mag * vec_helper[di]
         if len(point) > 4:
-            x = objects[obj]["center of mass"]["x"]
-            y = objects[obj]["center of mass"]["y"]
-            z = objects[obj]["center of mass"]["z"]
-            x1 = float(point[2])
-            y1 = float(point[3])
-            z1 = float(point[4])
-            com = np.cross(
-                (np.array([x1, y1, z1]).flatten() - np.array([x, y, z]).flatten())
-                / 100,
-                vec,
+            com = list(objects[obj]["center of mass"].values())
+            fom = np.cross(
+                (np.array(point[2:]).flatten() - np.array(com).flatten()),
+                fov,
             )
         else:
-            com = [0, 0, 0]
-        forces += np.array([vec, com]).flatten()
-    objects[obj]["forces"][frc] = {
-        "x": float(forces[0]),
-        "y": float(forces[1]),
-        "z": float(forces[2]),
-        "mx": float(forces[3]),
-        "my": float(forces[4]),
-        "mz": float(forces[5]),
-    }
+            fom = [0, 0, 0]
+        forces += np.array([fov, fom]).flatten()
+    objects[obj]["forces"][frc] = str(list(forces))
 
 save_yaml("objects", objects)

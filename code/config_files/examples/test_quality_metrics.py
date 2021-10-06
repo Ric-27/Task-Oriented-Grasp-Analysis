@@ -11,9 +11,9 @@ from grasp.quality_metrics import (
 from grasp.class_grasp import Grasp
 
 from functions import (
-    point_dict_to_list,
-    get_grasp_dict,
-    grp_item_to_Contacts,
+    __coordinate_dict_to_list,
+    __get_grasp_dict,
+    __grp_item_to_Contacts,
     get_dwext_dict,
 )
 
@@ -59,7 +59,7 @@ args = parser.parse_args()
 OBJ = args.object
 GRP = args.grasp
 
-grasps = get_grasp_dict()
+grasps = __get_grasp_dict()
 dirs = get_dwext_dict()
 
 DECIMAL_PLACES = 3
@@ -71,8 +71,8 @@ print(parser.format_usage())
 print("Arguments Values", vars(args), "\n")
 
 grasp_obj = Grasp(
-    point_dict_to_list(grasps[OBJ]["center of mass"]),
-    grp_item_to_Contacts(grasps[OBJ]["grasps"][GRP]),
+    __coordinate_dict_to_list(grasps[OBJ]["center of mass"]),
+    __grp_item_to_Contacts(grasps[OBJ]["grasps"][GRP]),
 )
 ffc = friction_form_closure(grasp_obj)[0]
 print("Friction Form Closure\nd= {}".format(round(ffc, DECIMAL_PLACES)))

@@ -9,10 +9,10 @@ from functions import (
     save_yaml,
     object_file_name,
     get_STLs_dict,
-    get_forces_dict,
+    __get_forces_dict,
 )
 
-forces = get_forces_dict()
+forces = __get_forces_dict()
 
 fmax = []
 dir = []

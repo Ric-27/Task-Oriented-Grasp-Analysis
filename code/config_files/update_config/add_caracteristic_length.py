@@ -22,10 +22,10 @@ for key, item in tqdm(
     z = objects[key]["center of mass"]["z"]
     com = np.array([x, y, z])
     mesh = STLs[key]
-    dist = 0
+    dist = -float("inf")
     for pt in mesh.vertices:
         t_dist = math.dist(com, pt)
         dist = t_dist if t_dist > dist else dist
-    objects[key]["characteristic length"] = round(dist / 100, 4)
+    objects[key]["characteristic length"] = round(dist, 5)
 
 save_yaml("objects", objects)
