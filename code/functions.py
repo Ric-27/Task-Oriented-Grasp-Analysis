@@ -1,4 +1,5 @@
 import os
+from numpy.core.numerictypes import obj2sctype
 import yaml
 import numpy as np
 from numpy.linalg import norm
@@ -68,7 +69,7 @@ def __get_grasp_dict() -> Dict:
     objects = get_object_dict()
     result = {}
     for obj in objects:
-        result[obj] = objects[obj]["grasps"]
+        result[obj] = {"grasps": objects[obj]["grasps"]}
     return result
 
 
@@ -76,7 +77,7 @@ def __get_forces_dict() -> Dict:
     objects = get_object_dict()
     result = {}
     for obj in objects:
-        result[obj] = objects[obj]["forces"]
+        result[obj] = {"forces": objects[obj]["forces"]}
     return result
 
 
@@ -101,7 +102,7 @@ def __coordinate_dict_to_list(point_as_dict: Dict) -> List:
     return [point_as_dict["x"], point_as_dict["y"], point_as_dict["z"]]
 
 
-def __contact_point_dict_to_Contact(point_as_dict: Dict) -> Contact:
+def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str) -> Contact:
     location = __coordinate_dict_to_list(point_as_dict)
     rot_matrix = point_as_dict["rm"].split(",")
     rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
@@ -110,11 +111,12 @@ def __contact_point_dict_to_Contact(point_as_dict: Dict) -> Contact:
         location=location,
         rotation_matrix=rotation_matrix,
         tangential_f_coef=tangential_f_coef,
+        contact_name=contact_name,
     )
 
 
 def __grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
-    return [__contact_point_dict_to_Contact(pt) for pt in grp_item.values()]
+    return [__contact_point_dict_to_Contact(pt, key) for key, pt in grp_item.items()]
 
 
 def get_STL_dict() -> Dict[str, STL]:
@@ -127,11 +129,12 @@ def get_STL_dict() -> Dict[str, STL]:
 
 def get_GRP_dict() -> Dict[str, Grasp]:
     grasps = __get_grasp_dict()
+    objs = get_object_dict()
     result = {}
     for obj, values in grasps.items():
         for key_grasp, val_grasp in values["grasps"].items():
             result[obj + "-" + key_grasp] = Grasp(
-                __coordinate_dict_to_list(values["center of mass"]),
+                __coordinate_dict_to_list(objs[obj]["center of mass"]),
                 __grp_item_to_Contacts(val_grasp),
             )
     return result
@@ -156,7 +159,7 @@ def get_OBJECT_dict() -> Dict[str, Dict]:
     }
 
 
-def partition_str(text: str, partition: str = "-") -> Tuple(str, str):
+def partition_str(text: str, partition: str = "-") -> Tuple[str, str]:
     part = text.partition(partition)
     return part[0], part[2]
 
@@ -180,27 +183,27 @@ def check_if_save(
 
 def save_to_excel(
     name_of_sheet: str,
-    data: Union[List, Dict],
+    data: List,
     columns: List,
-    indexes: List,
+    index: List,
     name_of_file: str = "Task Oriented Analysis",
 ) -> None:
     path = path_join_str(path_starting_from_code(1), "excel/" + name_of_file + ".xlsx")
+
     print(green_txt("saving..."), end="\r")
+
     dict_data = {}
-    if isinstance(data, list):
-        data = np.array(data)
-        for i, col in enumerate(columns, 0):
-            dict_data[col] = data[:, i]
-    else:
-        dict_data = data
+    data = np.array(data)
+    for i, col in enumerate(columns, 0):
+        dict_data[col] = data[:, i]
+
+    df = pd.DataFrame(dict_data, index=index, columns=columns)
+    # print(df)
 
     book = load_workbook(path)
     writer = pd.ExcelWriter(path, engine="openpyxl")
     writer.book = book
     writer.sheets = dict((ws.title, ws) for ws in book.worksheets)
-    df = pd.DataFrame(dict_data, index=indexes, columns=columns)
-
     df.to_excel(writer, sheet_name=name_of_sheet, index=True, na_rep="")
     writer.save()
 
@@ -283,7 +286,7 @@ def get_fmax_list() -> List:
     return fmax_t
 
 
-def get_dwext_dict() -> Dict:
+def get_dwext_dict() -> Dict[str, np.ndarray]:
     dext_ref = {
         "X": np.array([1, 0, 0, 0, 0, 0]),
         "Y": np.array([0, 1, 0, 0, 0, 0]),
@@ -312,7 +315,7 @@ def get_dwext_dict() -> Dict:
             res[:3] /= norm_lin
         if norm_mom:
             res[3:] /= norm_mom
-        dWext[key] = list(res)
+        dWext[key] = res
     return dWext
 
 

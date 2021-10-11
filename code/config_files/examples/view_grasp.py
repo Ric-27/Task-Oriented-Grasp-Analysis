@@ -4,13 +4,11 @@ import os, sys
 import keyboard
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from grasp.class_stl import STL
-from grasp.class_grasp import Grasp
 from functions import (
-    assert_TARGET_OBJ_GRP,
-    get_grasps_STLs_dict,
-    is_TARGET_OBJ_GRP,
-    point_dict_to_Contact,
+    assert_OBJ_exist_if_GRP_exist,
+    get_OBJECT_dict,
+    is_obj_grp_OBJ_GRP,
+    partition_str,
     object_file_name,
     print_if_worked,
 )
@@ -44,24 +42,23 @@ args = parser.parse_args()
 OBJ = args.object
 GRP = args.grasp
 
-assert_TARGET_OBJ_GRP(OBJ, GRP)
+assert_OBJ_exist_if_GRP_exist(OBJ, GRP)
 
-objects = get_grasps_STLs_dict()
+objects = get_OBJECT_dict()
 
 worked = False
-for obj, items in objects.items():
-    mesh = items["mesh"]
-    for grp, v_points in items["grasps"].items():
-        if is_TARGET_OBJ_GRP(OBJ, GRP, obj, grp):
+for obj1, mesh in objects["meshes"].items():
+    for grp1, grasp in objects["grasps"].items():
+        obj, grp = partition_str(grp1)
+        if obj != obj1:
+            continue
+        if is_obj_grp_OBJ_GRP(OBJ, GRP, obj, grp):
             worked = True
-            contact_points = [point_dict_to_Contact(pt) for pt in v_points.values()]
-
             if args.grasp_info:
-                grasp = Grasp(mesh.com, contact_points)
                 print("Gt \n", grasp.Gt.round(3))
                 grasp.get_classification(True)
 
-            mesh.view(obj + " " + grp, contact_points)
+            mesh.view(grp1, grasp.contact_points)
 
 print_if_worked(
     worked,

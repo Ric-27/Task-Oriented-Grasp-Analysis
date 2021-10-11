@@ -141,8 +141,8 @@ def force_closure(grasp: "Grasp", jacobian: "Jacobian") -> bool:
 
 
 def alpha_from_direction(
-    grasp: "Grasp", d_ext: List, fc_max: int = 10
-) -> Tuple(float, np.ndarray):
+    grasp: "Grasp", d_ext: List, fc_max: int = 1
+) -> Union[float, np.ndarray]:
     G = grasp.get_Gt().transpose()
     L = grasp.l
     if not is_grasp_valid(grasp):

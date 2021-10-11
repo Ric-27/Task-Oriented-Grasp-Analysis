@@ -39,6 +39,7 @@ class Contact:
         torsional_f_coef: float = 0,
         number_cone_faces: int = 8,
         adhesive_force: float = 0,
+        contact_name: str = "",
     ):
         assert (
             tangential_f_coef >= 0
@@ -57,6 +58,7 @@ class Contact:
         self.iota = torsional_f_coef
         self.ng = int(number_cone_faces)
         self.fa = adhesive_force
+        self.name = contact_name
         self.type = "None"
         self.F = np.zeros((1))
 
@@ -79,7 +81,7 @@ class Contact:
         else:
             sys.exit("ERROR: Contact Type Invalid")
         if self.fa != 0:
-            self.type += " with Adhesion"
+            self.type += " with Adhesion\n"
 
     def upt_cone(self):
         S = []

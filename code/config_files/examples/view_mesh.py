@@ -2,7 +2,7 @@ import os, sys
 import argparse
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-from functions import get_STLs_dict, object_file_name, print_if_worked
+from functions import get_STL_dict, object_file_name, print_if_worked
 
 parser = argparse.ArgumentParser(
     description="view the grasps saved on the predetermined file"
@@ -16,7 +16,7 @@ parser.add_argument(
 )
 args = parser.parse_args()
 OBJ = args.object
-stl_path = get_STLs_dict()
+stl_path = get_STL_dict()
 
 worked = False
 if not OBJ == "":

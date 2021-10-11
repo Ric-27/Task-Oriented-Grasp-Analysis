@@ -15,6 +15,7 @@ from functions import (
     __get_grasp_dict,
     __grp_item_to_Contacts,
     get_dwext_dict,
+    get_object_dict,
 )
 
 parser = argparse.ArgumentParser(
@@ -59,6 +60,7 @@ args = parser.parse_args()
 OBJ = args.object
 GRP = args.grasp
 
+objects = get_object_dict()
 grasps = __get_grasp_dict()
 dirs = get_dwext_dict()
 
@@ -71,7 +73,7 @@ print(parser.format_usage())
 print("Arguments Values", vars(args), "\n")
 
 grasp_obj = Grasp(
-    __coordinate_dict_to_list(grasps[OBJ]["center of mass"]),
+    __coordinate_dict_to_list(objects[OBJ]["center of mass"]),
     __grp_item_to_Contacts(grasps[OBJ]["grasps"][GRP]),
 )
 ffc = friction_form_closure(grasp_obj)[0]

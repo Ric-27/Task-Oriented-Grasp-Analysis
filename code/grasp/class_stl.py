@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import art3d
 from pylab import figure
 import random
-from typing import List, Union
+from typing import List, Union, Dict
 import keyboard
 
 sys.path.append(os.path.dirname(__file__))
@@ -51,8 +51,9 @@ class STL:
 
     def view(
         self,
-        plot_name: str,
+        plot_name: str = "Mesh View",
         contacts: List[Contact] = None,
+        forces: List[Dict] = None,
         view_not_return: bool = True,
     ) -> Union[Figure, None]:
 
@@ -86,7 +87,7 @@ class STL:
 
         ax.add_collection3d(collection)
 
-        ax.view_init(20, 45)
+        ax.view_init(20, 15)
 
         scale = self.triangles.flatten()
         ax.auto_scale_xyz(scale, scale, scale)
@@ -96,7 +97,7 @@ class STL:
         line_size = biggest * LINE_PERC
 
         ax.scatter(O[0], O[1], O[2], color="k")
-        if (self.com != O).any():
+        if (self.com != O).any() or forces is None:
             ax.text(O[0], O[1], O[2], "O", size=TEXT_SIZE, zorder=1, color="k")
         ax.plot(
             (O[0], line_size * X_W[0]),
@@ -116,24 +117,25 @@ class STL:
             (O[2], line_size * Z_W[2]),
             color="blue",
         )
-
-        ax.scatter(self.com[0], self.com[1], self.com[2], color="orange")
-        ax.text(
-            self.com[0],
-            self.com[1],
-            self.com[2],
-            "COM",
-            size=TEXT_SIZE,
-            zorder=1,
-        )
-        if not contacts is None:
+        if forces is None:
+            ax.scatter(self.com[0], self.com[1], self.com[2], color="orange")
+            ax.text(
+                self.com[0],
+                self.com[1],
+                self.com[2],
+                "COM",
+                size=TEXT_SIZE,
+                zorder=1,
+            )
+        if contacts is not None:
             for idx, contact in enumerate(contacts, 0):
                 color = "darkred"
                 n = np.dot(contact.r, X_W)
                 cx = contact.c[0]
                 cy = contact.c[1]
                 cz = contact.c[2]
-                ax.text(cx, cy, cz, idx, size=TEXT_SIZE, zorder=1)
+                txt = contact.name
+                ax.text(cx, cy, cz, txt, size=TEXT_SIZE, zorder=1)
 
                 ax.scatter(
                     cx,
@@ -148,6 +150,44 @@ class STL:
                     (cz, (cz + n[2] * line_size)),
                     color=color,
                 )
+        if forces is not None:
+            vec_helper = {
+                "X": np.array([1, 0, 0], dtype=float),
+                "Y": np.array([0, 1, 0], dtype=float),
+                "Z": np.array([0, 0, 1], dtype=float),
+            }
+            for force in forces:
+                color = "darkorange"
+                n = vec_helper[force["dir"]]
+
+                cx = force["pos"][0]
+                cy = force["pos"][1]
+                cz = force["pos"][2]
+                dir_help = 1 if force["mag"] > 0 else -1
+                txt = round(abs(force["mag"]), 2)
+                ax.text(
+                    cx,
+                    cy,
+                    cz,
+                    txt,
+                    size=TEXT_SIZE,
+                    zorder=1,
+                )
+                ax.scatter(
+                    cx,
+                    cy,
+                    cz,
+                    color=color,
+                    label=txt,
+                )
+                ax.plot(
+                    (cx, (cx + n[0] * dir_help * line_size)),
+                    (cy, (cy + n[1] * dir_help * line_size)),
+                    (cz, (cz + n[2] * dir_help * line_size)),
+                    color=color,
+                )
+            # ax.legend()
+
         if not view_not_return:
             plt.close(fig="all")
             return fig
@@ -193,7 +233,7 @@ class STL:
             ni = normal / np.linalg.norm(normal)
             ti = vector1 / np.linalg.norm(vector1)
 
-            if np.linalg.norm(ci + ni - self.com) > np.linalg.norm(ci - self.com):
+            if np.linalg.norm(ci + ni - self.com) < np.linalg.norm(ci - self.com):
                 ni *= -1
 
             oi = np.cross(ni, ti)

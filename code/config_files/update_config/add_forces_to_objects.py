@@ -4,17 +4,21 @@ from tqdm import tqdm
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from functions import (
-    __get_grasp_dict,
+    get_object_dict,
     save_yaml,
     get_raw_force_dict,
     object_file_name,
 )
+
+objects = get_object_dict()
 
 old_data = get_raw_force_dict()
 dir_sup = ["X", "Y", "Z"]
 data = {}
 for key, items in old_data.items():
     obj = key.partition("-")[0]
+    if obj not in objects:
+        continue
     frc = key.partition("-")[2]
     if frc == "hold":
         for di in dir_sup:
@@ -24,7 +28,6 @@ for key, items in old_data.items():
     else:
         data[key] = items
 
-objects = __get_grasp_dict()
 
 vec_helper = {
     "X": np.array([1, 0, 0], dtype=float),
@@ -53,7 +56,7 @@ for key, item in tqdm(
         if len(point) > 4:
             com = list(objects[obj]["center of mass"].values())
             fom = np.cross(
-                (np.array(point[2:]).flatten() - np.array(com).flatten()),
+                ((np.array(point[2:]).flatten() / 100) - np.array(com).flatten()),
                 fov,
             )
         else:
