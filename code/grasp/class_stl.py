@@ -54,45 +54,74 @@ class STL:
         plot_name: str = "Mesh View",
         contacts: List[Contact] = None,
         forces: List[Dict] = None,
+        poli: np.ndarray = None,
         view_not_return: bool = True,
     ) -> Union[Figure, None]:
 
         """View of the object, its center of mass and the world origin, and if passed all the contact points"""
+        # plt.style.use("dark_background")
         fig = figure(figsize=(10, 10))
-        fig.canvas.mpl_connect("key_press_event", keypress)
-        ax = fig.add_subplot(projection="3d")
-        ax.set_facecolor("white")
-        ax.set_xlabel("x")
-        ax.set_ylabel("y")
-        ax.set_zlabel("z")
+        ax = fig.add_subplot(111, projection="3d")
         minx = round(float(min(self.vertices[:, 0])), 3)
         maxx = round(float(max(self.vertices[:, 0])), 3)
         miny = round(float(min(self.vertices[:, 1])), 3)
         maxy = round(float(max(self.vertices[:, 1])), 3)
         minz = round(float(min(self.vertices[:, 2])), 3)
         maxz = round(float(max(self.vertices[:, 2])), 3)
-        title = f"{plot_name.upper()} \n X=({minx},{maxx}) Y=({miny},{maxy}) Z=({minz},{maxz}) \n COM: {self.com}"
-        plt.title(
-            label=title,
-            fontsize=10,
-            ha="center",
-            color="k",
-            fontname="monospace",
-            wrap=True,
-        )
+        if view_not_return:
+            fig.canvas.mpl_connect("key_press_event", keypress)
+            ax.set_facecolor("white")
+            ax.set_xlabel("x")
+            ax.set_ylabel("y")
+            ax.set_zlabel("z")
+            title = f"{plot_name.upper()} \n X=({minx},{maxx}) Y=({miny},{maxy}) Z=({minz},{maxz}) \n COM: {self.com}"
+            plt.title(
+                label=title,
+                fontsize=10,
+                ha="center",
+                color="k",
+                fontname="monospace",
+                wrap=True,
+            )
+        else:
+            # Make panes transparent
+            ax.xaxis.pane.fill = False  # Left pane
+            ax.yaxis.pane.fill = False  # Right pane
+            ax.zaxis.pane.fill = False  # Right pane
 
-        collection = art3d.Poly3DCollection(self.triangles, linewidths=0.4)
-        collection.set_facecolor((1.0, 1.0, 1.0, 0.0))
-        collection.set_edgecolor((0.0, 0.0, 0.0, 0.2))
+            # Remove grid lines
+            ax.grid(False)
 
+            # Remove tick labels
+            ax.set_xticklabels([])
+            ax.set_yticklabels([])
+            ax.set_zticklabels([])
+
+        collection = art3d.Poly3DCollection(self.triangles, linewidths=0.1)
+        collection.set_facecolor((0.5, 0.5, 0.5, 0.0))
+        collection.set_edgecolor((0.0, 0.0, 0.0, 0.5))
         ax.add_collection3d(collection)
 
         ax.view_init(20, 15)
 
         scale = self.triangles.flatten()
-        ax.auto_scale_xyz(scale, scale, scale)
-
+        # ax.auto_scale_xyz(scale, scale, scale)
         biggest = max(abs(scale))
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        ax.set_zlabel("Z")
+        ax.set_xlim3d([-biggest, biggest])
+        ax.set_ylim3d([-biggest, biggest])
+        ax.set_zlim3d([-biggest, biggest])
+
+        if poli is not None:
+            t = poli.flatten()
+            t *= biggest / 2
+            t = t.reshape(len(poli), 3, 3)
+            collection2 = art3d.Poly3DCollection(t, linewidths=0.3)
+            collection2.set_facecolor((0.0, 0.0, 1.0, 0.2))
+            collection2.set_edgecolor((0.0, 0.0, 0.0, 1))
+            ax.add_collection3d(collection2)
 
         line_size = biggest * LINE_PERC
 
@@ -189,6 +218,7 @@ class STL:
             # ax.legend()
 
         if not view_not_return:
+            plt.axis("off")
             plt.close(fig="all")
             return fig
         else:

@@ -82,7 +82,10 @@ for obj1, mesh in tqdm(
                 path_starting_from_code(1),
                 "excel/images/frc/" + str(counter) + "_" + frc1 + ".png",
             ),
+            dpi=100.0,
             bbox_inches="tight",
+            pad_inches=0,
+            transparent=False,
         )
         counter += 1
 

@@ -45,13 +45,15 @@ for obj1, mesh in tqdm(
         if obj != obj1:
             continue
         worked = True
-
         mesh.view(grp1, grasp.contact_points, view_not_return=False).savefig(
             path_join_str(
                 path_starting_from_code(1),
                 "excel/images/grp/" + str(counter) + "_" + grp1 + ".png",
             ),
+            dpi=100.0,
             bbox_inches="tight",
+            pad_inches=0,
+            transparent=False,
         )
         counter += 1
 

@@ -1,5 +1,5 @@
 from functions import (
-    get_fmax_list,
+    get_fmaW_list,
     object_file_name,
     __raw_forces_file_name,
     get_dwext_dict,
@@ -7,10 +7,62 @@ from functions import (
 )
 from itertools import product
 
-list1 = ["X", "-X", ""]
-list2 = [":Y", ":-Y", ""]
-list3 = [":Z", ":-Z", ""]
-lst = ["".join(p) for p in product(list1, list2, list3)]
+list1 = ["X", "-X"]
+list2 = ["Y", "-Y"]
+list3 = ["Z", "-Z"]
+
+TRIANGLE_TEMPLATE = [
+    "X,X:Y,X:Y:Z",
+    "X,X:Y,X:Y:-Z",
+    "X,X:-Y,X:-Y:Z",
+    "X,X:-Y,X:-Y:-Z",
+    "X,X:Z,X:Y:Z",
+    "X,X:Z,X:-Y:Z",
+    "X,X:-Z,X:Y:-Z",
+    "X,X:-Z,X:-Y:-Z",
+    "-X,-X:Y,-X:Y:Z",
+    "-X,-X:Y,-X:Y:-Z",
+    "-X,-X:-Y,-X:-Y:Z",
+    "-X,-X:-Y,-X:-Y:-Z",
+    "-X,-X:Z,-X:Y:Z",
+    "-X,-X:Z,-X:-Y:Z",
+    "-X,-X:-Z,-X:Y:-Z",
+    "-X,-X:-Z,-X:-Y:-Z",
+    "Y,X:Y,X:Y:Z",
+    "Y,X:Y,X:Y:-Z",
+    "Y,-X:Y,-X:Y:Z",
+    "Y,-X:Y,-X:Y:-Z",
+    "Y,Y:Z,X:Y:Z",
+    "Y,Y:Z,-X:Y:Z",
+    "Y,Y:-Z,X:Y:-Z",
+    "Y,Y:-Z,-X:Y:-Z",
+    "-Y,X:-Y,X:-Y:Z",
+    "-Y,X:-Y,X:-Y:-Z",
+    "-Y,-X:-Y,-X:-Y:Z",
+    "-Y,-X:-Y,-X:-Y:-Z",
+    "-Y,-Y:Z,X:-Y:Z",
+    "-Y,-Y:Z,-X:-Y:Z",
+    "-Y,-Y:-Z,X:-Y:-Z",
+    "-Y,-Y:-Z,-X:-Y:-Z",
+    "Z,Y:Z,X:Y:Z",
+    "Z,Y:Z,-X:Y:Z",
+    "Z,-Y:Z,X:-Y:Z",
+    "Z,-Y:Z,-X:-Y:Z",
+    "Z,X:Z,X:Y:Z",
+    "Z,X:Z,X:-Y:Z",
+    "Z,-X:Z,-X:Y:Z",
+    "Z,-X:Z,-X:-Y:Z",
+    "-Z,Y:-Z,X:Y:-Z",
+    "-Z,Y:-Z,-X:Y:-Z",
+    "-Z,-Y:-Z,X:-Y:-Z",
+    "-Z,-Y:-Z,-X:-Y:-Z",
+    "-Z,X:-Z,X:Y:-Z",
+    "-Z,X:-Z,X:-Y:-Z",
+    "-Z,-X:-Z,-X:Y:-Z",
+    "-Z,-X:-Z,-X:-Y:-Z",
+]
+
+lst = ["".join(p) for p in product(list4, list5, list6)]
 print(lst)
 # print(get_fmax_list())
 # print(object_file_name())

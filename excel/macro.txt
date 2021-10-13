@@ -1,0 +1,18 @@
+Option Explicit
+
+Sub InsertPictures()
+    'Update 20140513
+    Dim PicList() As Variant
+    Dim lLoop As Long
+
+    PicList = Application.GetOpenFilename(MultiSelect:=True)
+    If IsArray(PicList) Then
+        For lLoop = LBound(PicList) To UBound(PicList)
+            With ActiveCell.Offset(lLoop - 1)
+            'With Cells(2, 1).Offset(lLoop - 1)
+                 ActiveSheet.Shapes.AddPicture PicList(lLoop), msoFalse, msoCTrue, .Left, .Top, .Width, .Height
+                '.Offset(0).Value = Right(PicList(lLoop), Len(PicList(lLoop)) - InStrRev(PicList(lLoop), "\"))
+            End With
+        Next
+    End If
+End Sub

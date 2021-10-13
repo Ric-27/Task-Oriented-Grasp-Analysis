@@ -7,10 +7,11 @@ from functions import path_join_str, path_starting_from_code, green_txt
 files = [
     "png/objects",
     "png/grasps",
+    "png/forces",
     "grasp_info",
     "alpha",
     "force_required",
-    "png/forces",
+    "png/force_poli"
 ]
 
 

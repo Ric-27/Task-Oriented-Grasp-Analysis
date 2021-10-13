@@ -34,12 +34,16 @@ for obj in tqdm(
     desc="Going through the objects",
 ):
     worked = True
+    # STLs[obj].view(plot_name=obj)
     STLs[obj].view(obj, view_not_return=False).savefig(
         path_join_str(
             path_starting_from_code(1),
             "excel/images/obj/" + str(counter) + "_" + obj + ".png",
         ),
+        dpi=100.0,
         bbox_inches="tight",
+        pad_inches=0,
+        transparent=False,
     )
     counter += 1
 

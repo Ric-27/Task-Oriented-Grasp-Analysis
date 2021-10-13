@@ -4,6 +4,7 @@ import numpy as np
 
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from functions import (
+    get_raw_force_dict,
     read_excel,
     get_OBJECT_dict,
     red_txt,
@@ -17,6 +18,9 @@ objects = get_OBJECT_dict()
 dwext = get_dwext_dict()
 
 df_alpha = read_excel(file_name="Task Oriented Analysis", sheet_name="alpha")
+df_vec = read_excel(
+    file_name="Task Oriented Analysis", sheet_name="alpha - force vectors"
+)
 
 dirs = ["X", "Y", "Z", "mX", "mY", "mZ"]
 
@@ -33,6 +37,7 @@ for grasp in objects["grasps"].keys():
     index.append(grasp)
 
 data = np.zeros((len(index), len(columns)))
+data6 = np.empty((len(index), len(columns)), dtype=object)
 
 worked = False
 
@@ -51,6 +56,7 @@ for key_grasp in tqdm(
         if name_obj != name_obj2:
             continue
         min_f = -1
+        val_vec = "NONE"
         for i, val in enumerate(value_force, 0):
             if val == 0:
                 continue
@@ -60,11 +66,32 @@ for key_grasp in tqdm(
             if val_alpha <= 0:
                 continue
             min_f_temp = round(abs(val) / val_alpha, 3)
-            min_f = min_f_temp if min_f_temp > min_f else min_f
-        data[index.index(key_grasp), columns.index(key_force)] = min_f
 
+            if min_f_temp > min_f:
+                min_f = min_f_temp
+
+                val_vec = df_vec.loc[key_grasp, col_dir]
+                val_vec = val_vec.replace("] [", ",")
+                val_vec = val_vec[1:-1]
+                val_vec = val_vec.split(",")
+                val_vec = list(map(float, val_vec))
+                val_vec = np.array(val_vec)
+                val_vec_temp = min_f * val_vec
+                fc_str = []
+                for i in range(0, len(val_vec_temp), 3):
+                    fc_str.append(str(list(val_vec_temp[i : i + 3].round(3))))
+                val_vec = " ".join(fc_str)
+
+        data[index.index(key_grasp), columns.index(key_force)] = min_f
+        data6[index.index(key_grasp), columns.index(key_force)] = val_vec
 
 if worked:
+    columns1 = [
+        "min",
+        "frc",
+        "max",
+        "frc_",
+    ]
     data1 = []
     for row in data:
         mx = max(row)
@@ -74,20 +101,20 @@ if worked:
         val1 = [0, "none"]
         val2 = [0, "none"]
         row_t = list(row)
-        if mx > 0:
-            frc_mx = columns[row_t.index(mx)]
-            val1 = [mx, partition_str(frc_mx)[1]]
         if mn < np.inf:
             frc_mn = columns[row_t.index(mn)]
-            val2 = [mn, partition_str(frc_mn)[1]]
+            val1 = [mn, partition_str(frc_mn)[1]]
+        if mx > 0:
+            frc_mx = columns[row_t.index(mx)]
+            val2 = [mx, partition_str(frc_mx)[1]]
         data1.append(val1 + val2)
 
     data2 = []
     index_obj = []
     mx = -1
     for i, idx in enumerate(index):
-        if mx < data1[i][0]:
-            mx = data1[i][0]
+        if mx < data1[i][2]:
+            mx = data1[i][2]
         if (
             i == len(index) - 1
             or partition_str(idx)[0] != partition_str(index[i + 1])[0]
@@ -95,18 +122,28 @@ if worked:
             data2.append(mx)
             index_obj.append(partition_str(idx)[0])
             mx = -1
-
+    columns3 = [
+        "min",
+        "grp",
+        "max",
+        "grp_",
+    ]
     data3 = []
     for row in data.T:
         row_min = np.copy(row)
         row_min[row_min <= 0] = np.inf
         mn = min(row_min)
-        val = [0, "none"]
+        mx = max(row)
+        val1 = [0, "none"]
+        val2 = [0, "none"]
         row_t = list(row)
         if mn < np.inf:
             grp_mn = index[row_t.index(mn)]
-            val = [mn, partition_str(grp_mn)[1]]
-        data3.append(val)
+            val1 = [mn, partition_str(grp_mn)[1]]
+        if mx > 0:
+            grp_mx = index[row_t.index(mx)]
+            val2 = [mx, partition_str(grp_mx)[1]]
+        data3.append(val1 + val2)
 
     data4 = []
     mx = -1
@@ -128,13 +165,25 @@ if worked:
             mx = -1
             mn = float("inf")
 
-    columns2 = [
+    columns4 = [
         "min",
         "grasp",
         "all tasks - limited",
         "grasp_",
         "all tasks - all grasps",
     ]
+    data5 = []
+    raw_frc_dict = get_raw_force_dict()
+    for key_force, value_force in objects["forces"].items():
+        if key_force in raw_frc_dict:
+            key = key_force
+        else:
+            key = key_force.rpartition("_")[0]
+        desc = raw_frc_dict[key]
+        for arr in desc:
+            arr[0] = round(arr[0], 3)
+        data5.append([str(desc), str(list(np.array(value_force).round(3)))])
+    columns5 = ["description", "vector"]
     data[data == 0] = None
     save_to_excel(
         name_of_file="Task Oriented Analysis",
@@ -145,9 +194,37 @@ if worked:
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
+        name_of_sheet="force required - grasp",
+        data=data1,
+        columns=columns1,
+        index=index,
+    )
+    save_to_excel(
+        name_of_file="Task Oriented Analysis",
+        name_of_sheet="force required - perturbation",
+        data=data3,
+        columns=columns3,
+        index=columns,
+    )
+    save_to_excel(
+        name_of_file="Task Oriented Analysis",
         name_of_sheet="force required - obj",
         data=data4,
-        columns=columns2,
+        columns=columns4,
         index=index_obj,
+    )
+    save_to_excel(
+        name_of_file="Task Oriented Analysis",
+        name_of_sheet="force description",
+        data=data5,
+        columns=columns5,
+        index=columns,
+    )
+    save_to_excel(
+        name_of_file="Task Oriented Analysis",
+        name_of_sheet="force required - vectors",
+        data=data6.T,
+        columns=index,
+        index=columns,
     )
 print_if_worked(worked, "Finished", "No grasps were found")
