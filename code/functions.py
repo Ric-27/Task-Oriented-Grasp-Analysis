@@ -77,7 +77,7 @@ def __get_forces_dict() -> Dict:
     objects = get_object_dict()
     result = {}
     for obj in objects:
-        result[obj] = {"forces": objects[obj]["forces"]}
+        result[obj] = {"perturbations": objects[obj]["perturbations"]}
     return result
 
 
@@ -86,7 +86,7 @@ def __get_stl_path_dict() -> dict:
     path = path_join_str(path_starting_from_code(1), "stl/")
     for obj in objects:
         objects[obj].pop("grasps")
-        objects[obj].pop("forces")
+        objects[obj].pop("perturbations")
         objects[obj]["stl path"] = path_join_str(
             path, str(objects[obj]["stl file name"]) + ".stl"
         )
@@ -106,17 +106,18 @@ def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str) -> C
     location = __coordinate_dict_to_list(point_as_dict)
     rot_matrix = point_as_dict["rm"].split(",")
     rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
-    tangential_f_coef = point_as_dict["mu"]
     return Contact(
         location=location,
         rotation_matrix=rotation_matrix,
-        tangential_f_coef=tangential_f_coef,
         contact_name=contact_name,
     )
 
 
 def __grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
-    return [__contact_point_dict_to_Contact(pt, key) for key, pt in grp_item.items()]
+    return [
+        __contact_point_dict_to_Contact(point_as_dict=pt, contact_name=key)
+        for key, pt in grp_item.items()
+    ]
 
 
 def get_STL_dict() -> Dict[str, STL]:
@@ -133,9 +134,12 @@ def get_GRP_dict() -> Dict[str, Grasp]:
     result = {}
     for obj, values in grasps.items():
         for key_grasp, val_grasp in values["grasps"].items():
+            # print(obj + "-" + key_grasp)
+            com = __coordinate_dict_to_list(objs[obj]["center of mass"])
+            cp = __grp_item_to_Contacts(val_grasp)
             result[obj + "-" + key_grasp] = Grasp(
-                __coordinate_dict_to_list(objs[obj]["center of mass"]),
-                __grp_item_to_Contacts(val_grasp),
+                p=com,
+                contact_points=cp,
             )
     return result
 
@@ -144,7 +148,7 @@ def get_FRC_dict() -> Dict[str, List]:
     forces = __get_forces_dict()
     result = {}
     for obj, values in forces.items():
-        for key_force, val_force in values["forces"].items():
+        for key_force, val_force in values["perturbations"].items():
             value = val_force[1:-2].split(",")
             frc = [float(i) for i in value]
             result[obj + "-" + key_force] = frc
@@ -153,7 +157,7 @@ def get_FRC_dict() -> Dict[str, List]:
 
 def get_OBJECT_dict() -> Dict[str, Dict]:
     return {
-        "forces": get_FRC_dict(),
+        "perturbations": get_FRC_dict(),
         "grasps": get_GRP_dict(),
         "meshes": get_STL_dict(),
     }

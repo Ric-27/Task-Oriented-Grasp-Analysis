@@ -13,7 +13,12 @@ from functions import (
 objects = get_object_dict()
 
 old_data = get_raw_force_dict()
-dir_sup = ["X", "Y", "Z"]
+vec_helper = {
+    "X": np.array([1, 0, 0], dtype=float),
+    "Y": np.array([0, 1, 0], dtype=float),
+    "Z": np.array([0, 0, 1], dtype=float),
+}
+dir_sup = vec_helper.keys()
 data = {}
 for key, items in old_data.items():
     obj = key.partition("-")[0]
@@ -28,13 +33,6 @@ for key, items in old_data.items():
     else:
         data[key] = items
 
-
-vec_helper = {
-    "X": np.array([1, 0, 0], dtype=float),
-    "Y": np.array([0, 1, 0], dtype=float),
-    "Z": np.array([0, 0, 1], dtype=float),
-}
-
 for key, item in tqdm(
     data.items(),
     total=len(data),
@@ -43,10 +41,9 @@ for key, item in tqdm(
     leave=True,
     desc="Updating Force Definitions of " + object_file_name() + ".yaml",
 ):
-    obj = key.partition("-")[0]
-    frc = key.partition("-")[2]
-    if not "forces" in objects[obj]:
-        objects[obj]["forces"] = {}
+    obj, part, frc = key.partition("-")
+    if "perturbations" not in objects[obj]:
+        objects[obj]["perturbations"] = {}
 
     forces = np.zeros((6,))
     for point in item:
@@ -55,13 +52,21 @@ for key, item in tqdm(
         fov = mag * vec_helper[di]
         if len(point) > 4:
             com = list(objects[obj]["center of mass"].values())
+            loc = np.array(point[2:]) / 100 - com
             fom = np.cross(
-                ((np.array(point[2:]).flatten() / 100) - np.array(com).flatten()),
+                loc,
                 fov,
             )
         else:
             fom = [0, 0, 0]
-        forces += np.array([fov, fom]).flatten()
-    objects[obj]["forces"][frc] = str(list(forces))
-
+        forces += np.array([fov, fom]).flatten().round(5)
+    objects[obj]["perturbations"][frc] = str(list(forces))
+for obj, items in objects.items():
+    perturbation = {}
+    for key in data.keys():
+        obj1, part, frc = key.partition("-")
+        if obj1 != obj:
+            continue
+        perturbation[frc] = objects[obj]["perturbations"][frc]
+    objects[obj]["perturbations"] = perturbation
 save_yaml("objects", objects)

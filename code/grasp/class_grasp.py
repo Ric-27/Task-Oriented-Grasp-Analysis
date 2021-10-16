@@ -19,6 +19,7 @@ np.set_printoptions(suppress=True)
 class Grasp:
     def __init__(self, p: List, contact_points: List[Contact]) -> "Grasp":
         self.p = np.array(p)
+        assert contact_points, "There must be contact points to calculate the grasp"
         self.contact_points = contact_points
         self.nc = len(contact_points)
         self.H = np.zeros(1)

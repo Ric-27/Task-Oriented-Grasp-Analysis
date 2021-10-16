@@ -11,7 +11,7 @@ files = [
     "grasp_info",
     "alpha",
     "force_required",
-    "png/force_poli"
+    "png/force_poli",
 ]
 
 
@@ -24,7 +24,10 @@ def main():
                 path_starting_from_code(), "excel_data_generation/" + file + ".py"
             ),
         ]
-        subprocess.Popen(cmd).wait()
+        try:
+            subprocess.Popen(cmd).wait()
+        except Exception:
+            exit(Exception)
 
 
 if __name__ == "__main__":
