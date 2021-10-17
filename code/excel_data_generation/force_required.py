@@ -29,7 +29,7 @@ for d in dirs:
         exit(red_txt(f"The Alpha Table doesnt have the requiered direction: {d}"))
 
 columns = []
-for force in objects["forces"].keys():
+for force in objects["perturbations"].keys():
     columns.append(force)
 
 index = []
@@ -50,7 +50,7 @@ for key_grasp in tqdm(
     desc="Updating Min Force Required Info of Excel file",
 ):
     name_obj, name_grasp = partition_str(key_grasp)
-    for key_force, value_force in objects["forces"].items():
+    for key_force, value_force in objects["perturbations"].items():
         worked = True
         name_obj2, name_force = partition_str(key_force)
         if name_obj != name_obj2:
@@ -174,7 +174,7 @@ if worked:
     ]
     data5 = []
     raw_frc_dict = get_raw_force_dict()
-    for key_force, value_force in objects["forces"].items():
+    for key_force, value_force in objects["perturbations"].items():
         if key_force in raw_frc_dict:
             key = key_force
         else:

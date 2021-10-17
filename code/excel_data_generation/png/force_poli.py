@@ -122,7 +122,6 @@ for fold in folder:
                 shutil.rmtree(file_path)
         except Exception as e:
             print("Failed to delete %s. Reason: %s" % (file_path, e))
-folder = path_join_str(path_starting_from_code(1), "excel/images/poli_complex/")
 
 objects = get_OBJECT_dict()
 
@@ -163,7 +162,8 @@ for obj1, mesh in tqdm(
             if abs(min(triangles_s)) > max(triangles_s)
             else max(triangles_s)
         )
-        triangles_s /= mx
+        if mx:
+            triangles_s /= mx
         triangles_s = triangles_s.reshape(len(TRIANGLE_TEMPLATE_S), 3, 3)
 
         triangles_c = []
