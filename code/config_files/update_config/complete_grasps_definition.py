@@ -36,7 +36,7 @@ SORT_ORDER = [
     "center of mass",
     "characteristic length",
     "grasps",
-    "forces",
+    "perturbations",
 ]
 
 SORT_ORDER_POINTS = [

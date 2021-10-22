@@ -39,7 +39,7 @@ if worked:
     index = list(range(0, len(objects["grasps"])))
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="raw grasp info",
+        name_of_sheet="grasp1",
         data=data,
         columns=["grasp", "nc", "rank", "ind", "grs", "fcc"],
         index=index,

@@ -5,13 +5,13 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from functions import path_join_str, path_starting_from_code, green_txt
 
 files = [
-    "png/objects",
-    "png/grasps",
-    "png/forces",
+    # "png/objects",
+    # "png/grasps",
+    # "png/forces",
     "grasp_info",
     "alpha",
     "force_required",
-    "png/force_poli",
+    # "png/force_poli",
 ]
 
 

@@ -65,8 +65,11 @@ for key_grasp, grasp in tqdm(
 if worked:
     columns = dwext.keys()
     index = objects["grasps"].keys()
-    save_to_excel(name_of_sheet="alpha", data=data, columns=columns, index=index)
+    save_to_excel(name_of_sheet="alpha1", data=data, columns=columns, index=index)
     save_to_excel(
-        name_of_sheet="alpha - force vectors", data=data1, columns=columns, index=index
+        name_of_sheet="alpha - force vectors1",
+        data=data1,
+        columns=columns,
+        index=index,
     )
 print_if_worked(worked, "Finished", "No grasps were found")

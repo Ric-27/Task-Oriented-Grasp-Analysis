@@ -62,7 +62,9 @@ def __raw_forces_file_name() -> str:
 
 
 def get_object_dict() -> Dict:
-    return __open_file_on_config_dir(object_file_name())
+    objects = __open_file_on_config_dir(object_file_name())
+    # print(objects)
+    return objects
 
 
 def __get_grasp_dict() -> Dict:

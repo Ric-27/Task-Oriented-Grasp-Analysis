@@ -17,9 +17,9 @@ from functions import (
 objects = get_OBJECT_dict()
 dwext = get_dwext_dict()
 
-df_alpha = read_excel(file_name="Task Oriented Analysis", sheet_name="alpha")
+df_alpha = read_excel(file_name="Task Oriented Analysis", sheet_name="alpha1")
 df_vec = read_excel(
-    file_name="Task Oriented Analysis", sheet_name="alpha - force vectors"
+    file_name="Task Oriented Analysis", sheet_name="alpha - force vectors1"
 )
 
 dirs = ["X", "Y", "Z", "mX", "mY", "mZ"]
@@ -187,28 +187,28 @@ if worked:
     data[data == 0] = None
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required",
+        name_of_sheet="force required1",
         data=data.T,
         columns=index,
         index=columns,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - grasp",
+        name_of_sheet="force required - grasp1",
         data=data1,
         columns=columns1,
         index=index,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - perturbation",
+        name_of_sheet="force required - perturbation1",
         data=data3,
         columns=columns3,
         index=columns,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - obj",
+        name_of_sheet="force required - obj1",
         data=data4,
         columns=columns4,
         index=index_obj,
@@ -222,7 +222,7 @@ if worked:
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - vectors",
+        name_of_sheet="force required - vectors1",
         data=data6.T,
         columns=index,
         index=columns,
