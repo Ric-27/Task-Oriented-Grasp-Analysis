@@ -37,6 +37,7 @@ class Contact:
         rotation_matrix: np.ndarray,
         tangential_f_coef: float = 0.3,
         torsional_f_coef: float = 0,
+        char_len: float = 1,
         number_cone_faces: int = 8,
         adhesive_force: float = 0,
         contact_name: str = "",
@@ -56,6 +57,7 @@ class Contact:
         self.r = rotation_matrix
         self.mu = tangential_f_coef
         self.iota = torsional_f_coef
+        self.b = char_len
         self.ng = int(number_cone_faces)
         self.fa = adhesive_force
         self.name = contact_name
@@ -102,6 +104,10 @@ class Contact:
             Fk = np.cross(S[:, k], S[:, kk])
             F.append(Fk)
         self.F = np.array(F)
+
+        if self.type == "SF":
+            self.F = np.concatenate((self.F, np.zeros((self.ng+1,1))), axis=1)
+            self.F = np.concatenate((self.F, np.array([[1, 0, 0, self.b * self.iota], [1, 0, 0, - self.b * self.iota]])))
 
     def __repr__(self):
         return "<Contact Point at %s of type %s>" % (self.c, self.type)

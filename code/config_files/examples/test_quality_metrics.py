@@ -25,15 +25,15 @@ parser.add_argument(
     "-o",
     "--object",
     type=str,
-    default="petri",
-    help="select an object [def: petri]",
+    default="Petri",
+    help="select an object [def: Petri]",
 )
 parser.add_argument(
     "-g",
     "--grasp",
     type=str,
-    default="c12",
-    help="select a grasp of an object [def: c12]",
+    default="C12",
+    help="select a grasp of an object [def: C12]",
 )
 parser.add_argument(
     "-d",
@@ -76,19 +76,10 @@ grasp_obj = Grasp(
     __coordinate_dict_to_list(objects[OBJ]["center of mass"]),
     __grp_item_to_Contacts(grasps[OBJ]["grasps"][GRP]),
 )
-ffc = friction_form_closure(grasp_obj)[0]
-print("Friction Form Closure\nd= {}".format(round(ffc, DECIMAL_PLACES)))
 print(80 * "-")
 al, forces = alpha_from_direction(grasp_obj, D_EXT, FC_MAX)
 print(
     "UNKNOWN PERTURBATION: \nfor dWext={} with Fmax= {}N \n  max magnitude resisted={}, required Normal Contact Forces={}".format(
         D_EXT, FC_MAX, round(al, DECIMAL_PLACES), forces[0::3].round(DECIMAL_PLACES)
-    )
-)
-print(80 * "-")
-forces = forces_from_perturbation(grasp_obj, [ALPHA * np.array(D_EXT)])
-print(
-    "KNOWN PERTURBATION: \nfor Perturbation={}, required Normal Contact Forces={}".format(
-        str(ALPHA * np.array(D_EXT)), forces[::3].round(DECIMAL_PLACES)
     )
 )
