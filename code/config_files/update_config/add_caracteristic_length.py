@@ -28,4 +28,4 @@ for key, item in tqdm(
         dist = t_dist if t_dist > dist else dist
     objects[key]["characteristic length"] = round(dist, 5)
 
-save_yaml("objects", objects)
+save_yaml(object_file_name(False), objects)

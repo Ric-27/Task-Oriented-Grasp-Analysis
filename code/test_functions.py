@@ -1,5 +1,3 @@
-from functions import (
-    get_GRP_dict,
-)
+from functions import get_GRP_dict, sheet_sufix
 
-print(get_GRP_dict().items())
+print(sheet_sufix())

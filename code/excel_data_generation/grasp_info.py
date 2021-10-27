@@ -8,6 +8,7 @@ from functions import (
     get_OBJECT_dict,
     save_to_excel,
     print_if_worked,
+    sheet_sufix,
 )
 
 objects = get_OBJECT_dict()
@@ -39,7 +40,7 @@ if worked:
     index = list(range(0, len(objects["grasps"])))
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="grasp1",
+        name_of_sheet="grp " + sheet_sufix(),
         data=data,
         columns=["grasp", "nc", "rank", "ind", "grs", "fcc"],
         index=index,

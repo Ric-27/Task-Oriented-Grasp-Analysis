@@ -1,5 +1,4 @@
 import os, sys, shutil
-from numpy.lib.polynomial import polyint
 from tqdm import tqdm
 import numpy as np
 
@@ -12,6 +11,7 @@ from functions import (
     get_OBJECT_dict,
     partition_str,
     read_excel,
+    sheet_sufix,
 )
 
 TRIANGLE_TEMPLATE_C = [  # complex
@@ -64,16 +64,16 @@ TRIANGLE_TEMPLATE_C = [  # complex
     "-Z,-X:-Z,-X:Y:-Z",
     "-Z,-X:-Z,-X:-Y:-Z",
 ]
-TRIANGLE_TEMPLATE_S = [  # simple
-    "X,Y,Z",
-    "X,Y,-Z",
-    "X,-Y,Z",
-    "X,-Y,-Z",
-    "-X,Y,Z",
-    "-X,Y,-Z",
-    "-X,-Y,Z",
-    "-X,-Y,-Z",
-]
+# TRIANGLE_TEMPLATE_S = [  # simple
+#     "X,Y,Z",
+#     "X,Y,-Z",
+#     "X,-Y,Z",
+#     "X,-Y,-Z",
+#     "-X,Y,Z",
+#     "-X,Y,-Z",
+#     "-X,-Y,Z",
+#     "-X,-Y,-Z",
+# ]
 POINT_TEMPLATE = {
     "X": np.array([1.0, 0.0, 0.0]),
     "-X": np.array([-1.0, 0.0, 0.0]),
@@ -82,19 +82,19 @@ POINT_TEMPLATE = {
     "Z": np.array([0.0, 0.0, 1.0]),
     "-Z": np.array([0.0, 0.0, -1.0]),
 }
-TRIANGLE_DICT_S = {}
-for t_key in TRIANGLE_TEMPLATE_S:
-    t_s = t_key.split(",")
-    tr = []
-    for p in t_s:
-        pt = np.zeros((3,), dtype=float)
-        p_s = p.split(":")
-        for pi in p_s:
-            pt += POINT_TEMPLATE[pi]
-        tr.append(pt)
-    key = t_key.replace(":-", "-")
-    key = key.replace(":", "+")
-    TRIANGLE_DICT_S[key] = tr
+# TRIANGLE_DICT_S = {}
+# for t_key in TRIANGLE_TEMPLATE_S:
+#     t_s = t_key.split(",")
+#     tr = []
+#     for p in t_s:
+#         pt = np.zeros((3,), dtype=float)
+#         p_s = p.split(":")
+#         for pi in p_s:
+#             pt += POINT_TEMPLATE[pi]
+#         tr.append(pt)
+#     key = t_key.replace(":-", "-")
+#     key = key.replace(":", "+")
+#     TRIANGLE_DICT_S[key] = tr
 TRIANGLE_DICT_C = {}
 for t_key in TRIANGLE_TEMPLATE_C:
     t_s = t_key.split(",")
@@ -109,8 +109,8 @@ for t_key in TRIANGLE_TEMPLATE_C:
     key = key.replace(":", "+")
     TRIANGLE_DICT_C[key] = tr
 folder = [
-    path_join_str(path_starting_from_code(1), "excel/images/poli_simple/"),
-    path_join_str(path_starting_from_code(1), "excel/images/poli_complex/"),
+    # path_join_str(path_starting_from_code(1), "excel/images/poli_simple/"),
+    path_join_str(path_starting_from_code(1), "excel/images/polytope/"),
 ]
 for fold in folder:
     for filename in os.listdir(fold):
@@ -125,7 +125,9 @@ for fold in folder:
 
 objects = get_OBJECT_dict()
 
-df_alpha = read_excel(file_name="Task Oriented Analysis", sheet_name="alpha")
+df_alpha = read_excel(
+    file_name="Task Oriented Analysis", sheet_name="alpha " + sheet_sufix()
+)
 
 worked = False
 counter = 0
@@ -149,22 +151,22 @@ for obj1, mesh in tqdm(
         if obj != obj1:
             continue
 
-        triangles_s = []
-        for key, value in TRIANGLE_DICT_S.items():
-            points = key.split(",")
-            poi = []
-            for i, pt in enumerate(points):
-                poi.append(df_alpha.loc[grp1, pt] * value[i])
-            triangles_s.append(poi)
-        triangles_s = np.array(triangles_s).flatten()
-        mx = (
-            abs(min(triangles_s))
-            if abs(min(triangles_s)) > max(triangles_s)
-            else max(triangles_s)
-        )
-        if mx:
-            triangles_s /= mx
-        triangles_s = triangles_s.reshape(len(TRIANGLE_TEMPLATE_S), 3, 3)
+        # triangles_s = []
+        # for key, value in TRIANGLE_DICT_S.items():
+        #     points = key.split(",")
+        #     poi = []
+        #     for i, pt in enumerate(points):
+        #         poi.append(df_alpha.loc[grp1, pt] * value[i])
+        #     triangles_s.append(poi)
+        # triangles_s = np.array(triangles_s).flatten()
+        # mx = (
+        #     abs(min(triangles_s))
+        #     if abs(min(triangles_s)) > max(triangles_s)
+        #     else max(triangles_s)
+        # )
+        # if mx:
+        #     triangles_s /= mx
+        # triangles_s = triangles_s.reshape(len(TRIANGLE_TEMPLATE_S), 3, 3)
 
         triangles_c = []
         for key, value in TRIANGLE_DICT_C.items():
@@ -173,31 +175,23 @@ for obj1, mesh in tqdm(
             for i, pt in enumerate(points):
                 poi.append(df_alpha.loc[grp1, pt] * value[i])
             triangles_c.append(poi)
-        triangles_c = np.array(triangles_c).flatten()
-        mx = (
-            abs(min(triangles_c))
-            if abs(min(triangles_c)) > max(triangles_c)
-            else max(triangles_c)
-        )
-        triangles_c /= mx
-        triangles_c = triangles_c.reshape(len(TRIANGLE_TEMPLATE_C), 3, 3)
         worked = True
         # mesh.view(plot_name=grp1, contacts=grasp.contact_points, poli=triangles_s)
-        mesh.view(
-            plot_name=grp1,
-            contacts=grasp.contact_points,
-            poli=triangles_s,
-            view_not_return=False,
-        ).savefig(
-            path_join_str(
-                path_starting_from_code(1),
-                "excel/images/poli_simple/" + str(counter) + "_" + grp1 + "_poli-s.png",
-            ),
-            dpi=100.0,
-            bbox_inches="tight",
-            pad_inches=0,
-            transparent=False,
-        )
+        # mesh.view(
+        #     plot_name=grp1,
+        #     contacts=grasp.contact_points,
+        #     poli=triangles_s,
+        #     view_not_return=False,
+        # ).savefig(
+        #     path_join_str(
+        #         path_starting_from_code(1),
+        #         "excel/images/poli_simple/" + str(counter) + "_" + grp1 + "_poli-s.png",
+        #     ),
+        #     dpi=100.0,
+        #     bbox_inches="tight",
+        #     pad_inches=0,
+        #     transparent=False,
+        # )
         mesh.view(
             plot_name=grp1,
             contacts=grasp.contact_points,
@@ -206,11 +200,7 @@ for obj1, mesh in tqdm(
         ).savefig(
             path_join_str(
                 path_starting_from_code(1),
-                "excel/images/poli_complex/"
-                + str(counter)
-                + "_"
-                + grp1
-                + "_poli-c.png",
+                "excel/images/polytope/" + str(counter) + "_" + grp1 + "_poli.png",
             ),
             dpi=100.0,
             bbox_inches="tight",

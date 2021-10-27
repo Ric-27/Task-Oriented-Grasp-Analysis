@@ -12,14 +12,18 @@ from functions import (
     print_if_worked,
     get_dwext_dict,
     partition_str,
+    sheet_sufix,
 )
 
 objects = get_OBJECT_dict()
 dwext = get_dwext_dict()
 
-df_alpha = read_excel(file_name="Task Oriented Analysis", sheet_name="alpha1")
+df_alpha = read_excel(
+    file_name="Task Oriented Analysis", sheet_name="alpha " + sheet_sufix()
+)
 df_vec = read_excel(
-    file_name="Task Oriented Analysis", sheet_name="alpha - force vectors1"
+    file_name="Task Oriented Analysis",
+    sheet_name="alpha - vectors " + sheet_sufix(),
 )
 
 dirs = ["X", "Y", "Z", "mX", "mY", "mZ"]
@@ -187,44 +191,44 @@ if worked:
     data[data == 0] = None
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required1",
+        name_of_sheet="frc req " + sheet_sufix(),
         data=data.T,
         columns=index,
         index=columns,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - grasp1",
+        name_of_sheet="frc req - vectors " + sheet_sufix(),
+        data=data6.T,
+        columns=index,
+        index=columns,
+    )
+    save_to_excel(
+        name_of_file="Task Oriented Analysis",
+        name_of_sheet="frc req - grasp " + sheet_sufix(),
         data=data1,
         columns=columns1,
         index=index,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - perturbation1",
+        name_of_sheet="frc req - perturbation " + sheet_sufix(),
         data=data3,
         columns=columns3,
         index=columns,
     )
     save_to_excel(
         name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - obj1",
+        name_of_sheet="frc req - obj " + sheet_sufix(),
         data=data4,
         columns=columns4,
         index=index_obj,
     )
-    save_to_excel(
-        name_of_file="Task Oriented Analysis",
-        name_of_sheet="force description",
-        data=data5,
-        columns=columns5,
-        index=columns,
-    )
-    save_to_excel(
-        name_of_file="Task Oriented Analysis",
-        name_of_sheet="force required - vectors1",
-        data=data6.T,
-        columns=index,
-        index=columns,
-    )
+    # save_to_excel(
+    #     name_of_file="Task Oriented Analysis",
+    #     name_of_sheet="perturbation description",
+    #     data=data5,
+    #     columns=columns5,
+    #     index=columns,
+    # )
 print_if_worked(worked, "Finished", "No grasps were found")

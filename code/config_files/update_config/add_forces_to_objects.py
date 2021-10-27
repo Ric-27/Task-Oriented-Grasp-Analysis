@@ -69,4 +69,4 @@ for obj, items in objects.items():
             continue
         perturbation[frc] = objects[obj]["perturbations"][frc]
     objects[obj]["perturbations"] = perturbation
-save_yaml("objects", objects)
+save_yaml(object_file_name(False), objects)

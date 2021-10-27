@@ -1,9 +1,0 @@
-argparse
-keyboard
-matplotlib
-numpy
-scipy
-numpy-stl
-openpyxl
-pandas
-pyyaml

@@ -11,6 +11,7 @@ from functions import (
     save_to_excel,
     print_if_worked,
     partition_str,
+    sheet_sufix,
 )
 
 objects = get_OBJECT_dict()
@@ -65,9 +66,11 @@ for key_grasp, grasp in tqdm(
 if worked:
     columns = dwext.keys()
     index = objects["grasps"].keys()
-    save_to_excel(name_of_sheet="alpha1", data=data, columns=columns, index=index)
     save_to_excel(
-        name_of_sheet="alpha - force vectors1",
+        name_of_sheet="alpha " + sheet_sufix(), data=data, columns=columns, index=index
+    )
+    save_to_excel(
+        name_of_sheet="alpha - vectors " + sheet_sufix(),
         data=data1,
         columns=columns,
         index=index,
