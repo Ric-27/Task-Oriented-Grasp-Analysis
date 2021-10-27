@@ -1,0 +1,11 @@
+argparse
+black
+keyboard
+matplotlib
+numpy
+scipy
+numpy-stl
+openpyxl
+pandas
+pyyaml
+tqdm

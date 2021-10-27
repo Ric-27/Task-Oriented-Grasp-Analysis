@@ -115,13 +115,27 @@ class STL:
         ax.set_zlim3d([-biggest, biggest])
 
         if poli is not None:
-            t = poli.flatten()
-            t *= biggest / 2
+            triangles_c = np.array(poli).flatten()
+            mx = (
+                abs(min(triangles_c))
+                if abs(min(triangles_c)) > max(triangles_c)
+                else max(triangles_c)
+            )
+            mx = mx if mx != 0 else 1
+            t = triangles_c * biggest / (2 * mx)
             t = t.reshape(len(poli), 3, 3)
             collection2 = art3d.Poly3DCollection(t, linewidths=0.3)
             collection2.set_facecolor((0.0, 0.0, 1.0, 0.2))
             collection2.set_edgecolor((0.0, 0.0, 0.0, 1))
             ax.add_collection3d(collection2)
+            plt.title(
+                label=f"Longuest Side of Poly is equivalent to {mx} N",
+                fontsize=10,
+                ha="center",
+                color="k",
+                fontname="monospace",
+                wrap=True,
+            )
 
         line_size = biggest * LINE_PERC
 

@@ -80,4 +80,4 @@ for obj, items in objects.items():
         new_key = head[0].upper() + head[1:]
     new_objs[new_key] = items
 
-save_yaml("objects", new_objs)
+save_yaml(object_file_name(False), new_objs)

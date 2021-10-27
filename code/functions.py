@@ -53,8 +53,15 @@ def __get_value_of_key_in_config_file(key: str) -> str:
     return config[key]
 
 
-def object_file_name() -> str:
-    return __get_value_of_key_in_config_file("object yaml file name")
+def object_file_name(read: bool = True) -> str:
+    if read:
+        return __get_value_of_key_in_config_file("object yaml file read")
+    else:
+        return __get_value_of_key_in_config_file("object yaml file write")
+
+
+def sheet_sufix() -> str:
+    return str(__get_value_of_key_in_config_file("sheet suffix"))
 
 
 def __raw_forces_file_name() -> str:
@@ -63,7 +70,6 @@ def __raw_forces_file_name() -> str:
 
 def get_object_dict() -> Dict:
     objects = __open_file_on_config_dir(object_file_name())
-    # print(objects)
     return objects
 
 
@@ -108,10 +114,15 @@ def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str) -> C
     location = __coordinate_dict_to_list(point_as_dict)
     rot_matrix = point_as_dict["rm"].split(",")
     rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
+    if not int(sheet_sufix()) % 2:
+        mu = 0.3
+    else:
+        mu = 0.5
     return Contact(
         location=location,
         rotation_matrix=rotation_matrix,
         contact_name=contact_name,
+        tangential_f_coef=mu,
     )
 
 
