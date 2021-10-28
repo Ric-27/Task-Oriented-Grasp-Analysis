@@ -152,15 +152,25 @@ def alpha_from_direction(
         d_ext = np.array(d_ext)
 
     F = grasp.F
-    lF = np.shape(F)[0]
+    lF = F.shape[0]
 
     obj = np.zeros((L + 1, 1))
     obj[0] = -1
 
     # 0*alpha - F*fc <= F*fa (F*fc > -F*fa)
+
+    # print("L =", L)
     fa = np.zeros((L,))
-    for i in range(0, L, 3):
-        fa[i] = grasp.contact_points[i // 3].fa
+    # step = 4 if grasp.type == "SF" else 3
+
+    # for i in range(0, L, step):
+    #     fa[i] = grasp.contact_points[i // step].fa
+
+    pos = 0
+    for cp in grasp.contact_points:
+        print(cp)
+        fa[pos] = cp.fa
+        pos += 4 if cp.type.startswith("SF") else 3
 
     lhs_ineq = np.concatenate((np.zeros((lF, 1)), -F), axis=1)
     rhs_ineq = (F @ fa).flatten()

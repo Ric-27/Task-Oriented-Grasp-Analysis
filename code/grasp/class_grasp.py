@@ -31,16 +31,16 @@ class Grasp:
         self.__updt_classification()
         self.__updt_Gt()
         self.F = None
-        not_hf = False
-        for contact in contact_points:
-            if contact.type != "HF":
-                print(
-                    "One or more contact point was not HF, cant use the quality metrics"
-                )
-                not_hf = True
-                break
-        if not not_hf:
-            self.__updt_F()
+        # not_hf = False
+        # for contact in contact_points:
+        #     if contact.type != "HF":
+        #         print(
+        #             "One or more contact point was not HF, cant use the quality metrics"
+        #         )
+        #         not_hf = True
+        #         break
+        # if not not_hf:
+        self.__updt_F()
 
     def __updt_F(self):
         fi = []
