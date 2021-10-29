@@ -80,6 +80,7 @@ class Contact:
             self.type = "SF"
             self.l = 4
             self.h = np.concatenate((np.identity(4), np.zeros((4, 2))), axis=1)
+            self.upt_cone()
         else:
             sys.exit("ERROR: Contact Type Invalid")
         if self.fa != 0:
@@ -105,9 +106,16 @@ class Contact:
             F.append(Fk)
         self.F = np.array(F)
 
-        if self.type == "SF":
-            self.F = np.concatenate((self.F, np.zeros((self.ng+1,1))), axis=1)
-            self.F = np.concatenate((self.F, np.array([[1, 0, 0, self.b * self.iota], [1, 0, 0, - self.b * self.iota]])))
+        if self.type.startswith("SF"):
+            self.F = np.concatenate((self.F, np.zeros((self.ng, 1))), axis=1)
+            self.F = np.concatenate(
+                (
+                    self.F,
+                    np.array(
+                        [[1, 0, 0, self.b * self.iota], [1, 0, 0, -self.b * self.iota]]
+                    ),
+                )
+            )
 
     def __repr__(self):
         return "<Contact Point at %s of type %s>" % (self.c, self.type)

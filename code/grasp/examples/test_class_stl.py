@@ -6,11 +6,11 @@ from class_stl import STL
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 path = (
     os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
-    + "/stl/cube_low.stl"
+    + "/stl/petri.stl"
 )
 
 mesh = STL(path, [0, 0, 0])
-fig_name = "test"
+fig_name = "Petri"
 mesh.view(fig_name)
 
 C = mesh.gen_C_randomly(8)

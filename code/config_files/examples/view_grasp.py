@@ -54,7 +54,7 @@ for obj1, mesh in objects["meshes"].items():
             continue
         if is_obj_grp_OBJ_GRP(OBJ, GRP, obj, grp):
             worked = True
-            if args.grasp_info:
+            if args.grasp_info or True:
                 print("Gt \n", grasp.Gt.round(3))
                 grasp.get_classification(True)
 

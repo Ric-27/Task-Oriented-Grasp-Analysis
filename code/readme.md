@@ -15,21 +15,13 @@ This code allows for the grasp analysis of a task-oriented project by providing 
 
 ## Requirements
 
-This project uses Python **3.8** *(3.6 was also tested and it worked)*
+This project uses Python **3.8**
 
-This project needs the following python libraries to work:
+install using
 
-- numpy (everything)
-- matplotlib (only for stl class)
-- numpy-stl (only for stl class)
-- scipy (only for the quality metrics)
-- pandas (only to save to excel)
-- openpyxl (only to save to excel)
-- ast (only to save to excel)
-- argparse
-- keyboard
-
-The other requirements should be already on your system as they normally come with Python.
+```bash
+pip install -r ./code/requirements.txt
+```
 
 ## **Usage**
 
@@ -42,26 +34,26 @@ from class_stl import STL
 import numpy as np
 
 #declare a mesh object of type STL
-mesh = STL("file path to the .stl file") 
+mesh = STL("file path to the .stl file")
 
 #preview mesh
-mesh.view() 
+mesh.view()
 
 #create nc random points for triangles in the mesh, edges of the mesh and points of the mesh (resp) for a total of 3 x nc
-Ct, Rt, Ce, Re, Cv, Rv = mesh.gen_C_randomly(nc) 
+Ct, Rt, Ce, Re, Cv, Rv = mesh.gen_C_randomly(nc)
 
  #from the point (5,0,0) create a contact point in the nearest edge ("E")
 C1, R1 = mesh.gen_C_from_coordinates(np.array([5, 0, 0]), "E")
 
 #correct way of joining different contact points
-C = np.concatenate((Ct, Ce, Cv, C1), axis=0) 
+C = np.concatenate((Ct, Ce, Cv, C1), axis=0)
 R = np.concatenate((Rt, Re, Rv, R1), axis=0)
 
 #preview mesh with contact points
-mesh.view_with_C(C, R)
+mesh.view_with_C(C, R) #deprecated, now view() accepts contact points as parameters
 
 #access mesh attributes like geometric center (also available: triangles, edges and vertices)
-center = mesh.cog 
+center = mesh.cog
 ```
 
 ---
@@ -73,7 +65,7 @@ from class_grasp import Grasp
 import numpy as np
 
 #declaration of the point inside the object, where the  object's frame is located
-p = np.array([2, 10, 0]) 
+p = np.array([2, 10, 0])
 
 #creation of contact points with their rotation frame
 c1 = np.array([6, 10, 0])
@@ -90,7 +82,7 @@ R = np.array([R1, R2])
 h = np.array(["H", "H"])
 
 #grasp object creation
-grasp = Grasp(p, C, R, h)
+grasp = Grasp(p, C, R, h) #deprecated, C, R and h are combined into a new data structure called Contact
 
 #calculating the Transposed Grasp Matrix of the grasp system
 Gt = grasp.get_grasp_matrix_t()
@@ -129,7 +121,7 @@ q3c = np.array([-8, 0, 0])
 q4c = np.array([-8, 3, 0])
 q5c = np.array([-6, 7, 0])
 
- 
+
 #joints declaration:unique id, center, unit vector direction, affected contact index
 
 #joint with id 1, has center q1c, its z is pointing in zv and doesnt affect any contact point.

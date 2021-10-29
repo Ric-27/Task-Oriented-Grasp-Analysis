@@ -96,9 +96,6 @@ def is_grasp_valid(grasp: "Grasp") -> bool:
         return False
     if not grasp.graspable:
         return False
-    for contact in grasp.contact_points:
-        if not (contact.type == "HF" or contact.type == "HF with Adhesion"):
-            return False
     return True
 
 
