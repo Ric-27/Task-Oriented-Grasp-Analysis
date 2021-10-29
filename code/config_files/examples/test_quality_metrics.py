@@ -74,7 +74,9 @@ print("Arguments Values", vars(args), "\n")
 
 grasp_obj = Grasp(
     __coordinate_dict_to_list(objects[OBJ]["center of mass"]),
-    __grp_item_to_Contacts(grasps[OBJ]["grasps"][GRP]),
+    __grp_item_to_Contacts(
+        grasps[OBJ]["grasps"][GRP], char_len=objects[OBJ]["characteristic length"]
+    ),
 )
 # ffc = friction_form_closure(grasp_obj)[0]
 # print("Friction Form Closure\nd= {}".format(round(ffc, DECIMAL_PLACES)))

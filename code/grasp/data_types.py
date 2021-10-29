@@ -36,7 +36,7 @@ class Contact:
         location: List,
         rotation_matrix: np.ndarray,
         tangential_f_coef: float = 0.3,
-        torsional_f_coef: float = 0,
+        torsional_f_coef: float = 0.2,
         char_len: float = 1,
         number_cone_faces: int = 8,
         adhesive_force: float = 0,

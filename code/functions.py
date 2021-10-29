@@ -110,7 +110,7 @@ def __coordinate_dict_to_list(point_as_dict: Dict) -> List:
     return [point_as_dict["x"], point_as_dict["y"], point_as_dict["z"]]
 
 
-def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str) -> Contact:
+def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str, char_len: os.statvfs_result) -> Contact:
     location = __coordinate_dict_to_list(point_as_dict)
     rot_matrix = point_as_dict["rm"].split(",")
     rotation_matrix = np.array(list(map(float, rot_matrix))).reshape(3, 3)
@@ -123,12 +123,14 @@ def __contact_point_dict_to_Contact(point_as_dict: Dict, contact_name: str) -> C
         rotation_matrix=rotation_matrix,
         contact_name=contact_name,
         tangential_f_coef=mu,
+        # torsional_f_coef,
+        char_len=char_len,
     )
 
 
-def __grp_item_to_Contacts(grp_item: Dict) -> List[Contact]:
+def __grp_item_to_Contacts(grp_item: Dict, **kwargs) -> List[Contact]:
     return [
-        __contact_point_dict_to_Contact(point_as_dict=pt, contact_name=key)
+        __contact_point_dict_to_Contact(point_as_dict=pt, contact_name=key, **kwargs)
         for key, pt in grp_item.items()
     ]
 
